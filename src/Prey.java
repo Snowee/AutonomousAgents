@@ -135,7 +135,7 @@ public class Prey {
 		checkPos.y = checkPos.y - 1;
 		if ( checkPos.y < 0 ) 
 			checkPos.y = 10;
-		if ( checkPos.equals(pred) ) {
+		if ( checkPos.equals(pred.pos) ) {
 			return "NORTH";
 		} else {
 			//East
@@ -143,7 +143,7 @@ public class Prey {
 			checkPos.x = checkPos.x + 1;
 			if ( checkPos.x > 10 ) 
 				checkPos.x = 0;
-			if ( checkPos.equals(pred) ) {
+			if ( checkPos.equals(pred.pos) ) {
 				return "EAST";
 			} else {
 				//South
@@ -151,7 +151,7 @@ public class Prey {
 				checkPos.y = checkPos.y + 1;
 				if ( checkPos.y > 10 ) 
 					checkPos.y = 0;
-				if ( checkPos.equals(pred) ) {
+				if ( checkPos.equals(pred.pos) ) {
 					return "SOUTH";
 				} else {
 					//West
@@ -159,7 +159,7 @@ public class Prey {
 					checkPos.x = checkPos.x - 1;
 					if ( checkPos.x < 0 ) 
 						checkPos.x = 10;
-					if ( checkPos.equals(pred) ) {
+					if ( checkPos.equals(pred.pos) ) {
 						return "WEST";
 					} else {
 						return "CLEAR";
