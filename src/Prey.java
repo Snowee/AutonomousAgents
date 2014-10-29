@@ -1,7 +1,10 @@
 import java.awt.Point;
+import java.util.Arrays;
+import java.util.List;
 public class Prey {
 	
 	public Point pos;
+	private List<String> possibleMoves = Arrays.asList("NORTH","EAST","SOUTH","WEST");
 		
 	public Prey () {
 		pos = new Point();
@@ -37,77 +40,15 @@ public class Prey {
 				}
 			}
 		} else {
-			switch ( predNear ) {
-			case "NORTH":
-				if ( chance < 0.80 ) {
-					move = "WAIT";
-				} else {
-					if ( chance >= 0.80 && chance < 0.80 + 0.20/3 ) {
-						move = "EAST";
-					} else {
-						if ( chance >= 0.80 + 0.20/3 && chance < 0.80 + 0.40/3 ) {
-							move = "SOUTH";
-						} else {
-							if ( chance >= 0.80 + 0.40/3 ) {
-								move = "WEST";
-							}
-						}
-					}
+			List<Double> remainingMoveProbs = Arrays.asList(1*(0.80/3), 2*(0.80/3), 3*(0.80/3));
+			possibleMoves.remove( predNear );
+			for ( int i = 0; i < possibleMoves.size(); i++ ) {
+				if ( chance < remainingMoveProbs.get(i) ) {
+					move = possibleMoves.get(i);
 				}
-				break;
-			case "WEST":
-				if ( chance < 0.80 ) {
-					move = "WAIT";
-				} else {
-					if ( chance >= 0.80 && chance < 0.80 + 0.20/3 ) {
-						move = "EAST";
-					} else {
-						if ( chance >= 0.80 + 0.20/3 && chance < 0.80 + 0.40/3 ) {
-							move = "SOUTH";
-						} else {
-							if ( chance >= 0.80 + 0.40/3 ) {
-								move = "NORTH";
-							}
-						}
-					}
-				}
-				break;
-			case "EAST":
-				if ( chance < 0.80 ) {
-					move = "WAIT";
-				} else {
-					if ( chance >= 0.80 && chance < 0.80 + 0.20/3 ) {
-						move = "NORTH";
-					} else {
-						if ( chance >= 0.80 + 0.20/3 && chance < 0.80 + 0.40/3 ) {
-							move = "SOUTH";
-						} else {
-							if ( chance >= 0.80 + 0.40/3 ) {
-								move = "WEST";
-							}
-						}
-					}
-				}
-				break;
-			case "SOUTH":
-				if ( chance < 0.80 ) {
-					move = "WAIT";
-				} else {
-					if ( chance >= 0.80 && chance < 0.80 + 0.20/3 ) {
-						move = "EAST";
-					} else {
-						if ( chance >= 0.80 + 0.20/3 && chance < 0.80 + 0.40/3 ) {
-							move = "NORTH";
-						} else {
-							if ( chance >= 0.80 + 0.40/3 ) {
-								move = "WEST";
-							}
-						}
-					}
-				}
-				break;
-			default:
-				break;	
+			}
+			if ( move.equals("") ) {
+				move = "WAIT";
 			}
 		}
 	return move;
