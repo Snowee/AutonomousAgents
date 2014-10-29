@@ -4,7 +4,6 @@ import java.util.List;
 public class Prey {
 	
 	public Point pos;
-	private List<String> possibleMoves = Arrays.asList("NORTH","EAST","SOUTH","WEST");
 		
 	public Prey () {
 		pos = new Point();
@@ -40,6 +39,7 @@ public class Prey {
 				}
 			}
 		} else {
+			List<String> possibleMoves = Arrays.asList("NORTH","EAST","SOUTH","WEST");
 			List<Double> remainingMoveProbs = Arrays.asList(1*(0.80/3), 2*(0.80/3), 3*(0.80/3));
 			possibleMoves.remove( predNear );
 			for ( int i = 0; i < possibleMoves.size(); i++ ) {
