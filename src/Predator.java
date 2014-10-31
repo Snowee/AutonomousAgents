@@ -1,33 +1,43 @@
 import java.awt.Point;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class Predator {
 
 	public Point pos;
+	public Map<String, Double> policy;
 	
 	public Predator () {
 		pos = new Point();
 		pos.x = 0;
 		pos.y = 0;
+		policy = new HashMap<String, Double>();
+		policy.put("NORTH", 0.2);
+		policy.put("EAST", 0.2);
+		policy.put("SOUTH", 0.2);
+		policy.put("WEST", 0.2);
+		policy.put("WAIT", 0.2);
 	}
 	
 	public String move () {
-		double policy = Math.random();
+		double chance = Math.random();
 		String move;
+		
 		// North
-		if ( policy < 0.20 ) {
+		if ( chance < 0.20 ) {
 			move = "NORTH";			
 		} else {
 			// East
-			if ( policy >= 0.20 && policy < 0.40 ) {
+			if ( chance >= 0.20 && chance < 0.40 ) {
 				move = "EAST";
 			} else {
 				// South
-				if ( policy >= 0.40 && policy < 0.60 ) {
+				if ( chance >= 0.40 && chance < 0.60 ) {
 					move = "SOUTH";
 				} else {
 					// West
-					if ( policy >= 0.60 && policy < 0.80 ) {
+					if ( chance >= 0.60 && chance < 0.80 ) {
 						move = "WEST";
 					} else {
 						// Wait
