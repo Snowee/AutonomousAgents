@@ -12,7 +12,7 @@ public class Game {
 		endState = false;
 	}
 	
-	public void start() {
+	public int start() {
 		int counter = 0;
 		//pred.to_String();
 		//prey.to_String();
@@ -32,6 +32,7 @@ public class Game {
 			
 		}
 		System.out.printf("Game ended in %d steps\n", counter);
+		return counter;
 	}
 	
 	public Point getMove( String move ) {
