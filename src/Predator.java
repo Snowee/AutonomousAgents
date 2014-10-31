@@ -12,22 +12,22 @@ public class Predator {
 	}
 	
 	public String move () {
-		double chance = Math.random();
+		double policy = Math.random();
 		String move;
 		// North
-		if ( chance < 0.20 ) {
+		if ( policy < 0.20 ) {
 			move = "NORTH";			
 		} else {
 			// East
-			if ( chance >= 0.20 && chance < 0.40 ) {
+			if ( policy >= 0.20 && policy < 0.40 ) {
 				move = "EAST";
 			} else {
 				// South
-				if ( chance >= 0.40 && chance < 0.60 ) {
+				if ( policy >= 0.40 && policy < 0.60 ) {
 					move = "SOUTH";
 				} else {
 					// West
-					if ( chance >= 0.60 && chance < 0.80 ) {
+					if ( policy >= 0.60 && policy < 0.80 ) {
 						move = "WEST";
 					} else {
 						// Wait

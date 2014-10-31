@@ -1,7 +1,6 @@
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 public class Prey {
 	
 	public Point pos;
@@ -14,23 +13,23 @@ public class Prey {
 	
 	public String move ( String predNear ) {
 		String move =  "";
-		double chance = Math.random();
+		double policy = Math.random();
 
 		if ( predNear.equals("CLEAR") ) {
 			// Wait
-			if ( chance < 0.80 ) {
+			if ( policy < 0.80 ) {
 				move = "WAIT";			
 			} else {
 				// East
-				if ( chance >= 0.80 && chance < 0.85 ) {
+				if ( policy >= 0.80 && policy < 0.85 ) {
 					move = "EAST";
 				} else {
 					// South
-					if ( chance >= 0.85 && chance < 0.90 ) {
+					if ( policy >= 0.85 && policy < 0.90 ) {
 						move = "SOUTH";
 					} else {
 						// West
-						if ( chance >= 0.90 && chance < 0.95 ) {
+						if ( policy >= 0.90 && policy < 0.95 ) {
 							move = "WEST";
 						} else {
 							// Stay
@@ -46,7 +45,7 @@ public class Prey {
 					new ArrayList<Double>(Arrays.asList(1*(0.80/3), 2*(0.80/3), 3*(0.80/3)));
 			possibleMoves.remove( predNear );
 			for ( int i = 0; i < possibleMoves.size(); i++ ) {
-				if ( chance < remainingMoveProbs.get(i) ) {
+				if ( policy < remainingMoveProbs.get(i) ) {
 					move = possibleMoves.get(i);
 				}
 			}
