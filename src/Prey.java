@@ -1,9 +1,12 @@
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 public class Prey {
 	
 	public Point pos;
+	String[] possibleMoves = {"WAIT","NORTH","EAST","SOUTH","WEST"};
+	double[] probRange = {0.8, 0.85, 0.9, 0.95, 1};
 		
 	public Prey () {
 		pos = new Point();
@@ -11,46 +14,25 @@ public class Prey {
 		pos.y = 5;
 	}
 	
-	public String move ( String predNear ) {
+	public String getMove( String predNear ) {
 		String move =  "";
-		double policy = Math.random();
-
+		double chance = Math.random();
 		if ( predNear.equals("CLEAR") ) {
-			// Wait
-			if ( policy < 0.80 ) {
-				move = "WAIT";			
-			} else {
-				// East
-				if ( policy >= 0.80 && policy < 0.85 ) {
-					move = "EAST";
-				} else {
-					// South
-					if ( policy >= 0.85 && policy < 0.90 ) {
-						move = "SOUTH";
-					} else {
-						// West
-						if ( policy >= 0.90 && policy < 0.95 ) {
-							move = "WEST";
-						} else {
-							// Stay
-							move = "NORTH";
-						}
-					}
+			for(int i = 0; i < probRange.length; i++){
+				if(chance <= probRange[i]){
+					move = possibleMoves[i];
+					break;
 				}
 			}
 		} else {
-			ArrayList<String> possibleMoves = 
-					new ArrayList<String>(Arrays.asList("NORTH","EAST","SOUTH","WEST"));
-			ArrayList<Double> remainingMoveProbs = 
-					new ArrayList<Double>(Arrays.asList(1*(0.80/3), 2*(0.80/3), 3*(0.80/3)));
-			possibleMoves.remove( predNear );
-			for ( int i = 0; i < possibleMoves.size(); i++ ) {
-				if ( policy < remainingMoveProbs.get(i) ) {
-					move = possibleMoves.get(i);
+			List<String> remainingMoves = new ArrayList<String>(Arrays.asList(possibleMoves));
+			List<Double> remainingMoveProbs = Arrays.asList(0.2, 0.2+1*(0.80/3), 0.2+2*(0.80/3), 0.2+3*(0.80/3));
+			remainingMoves.remove( predNear );
+			for ( int i = 0; i < remainingMoves.size(); i++ ) {
+				if ( chance < remainingMoveProbs.get(i) ) {
+					move = remainingMoves.get(i);
+					break;
 				}
-			}
-			if ( move.equals("") ) {
-				move = "WAIT";
 			}
 		}
 	return move;
@@ -60,57 +42,36 @@ public class Prey {
 	public void newPos( Point move ) {
 		pos.x = pos.x + move.x;
 		pos.y = pos.y + move.y;
-		if ( pos.x > 10 ) 
-			pos.x = 0;
-		if ( pos.y > 10 )
-			pos.y = 0;
-		if ( pos.x < 0 )
-			pos.x = 10;
-		if ( pos.y < 0 )
-			pos.y = 10;
-	}
-	
-	public String checkPred( Predator pred ) {
-		Point checkPos = new Point();
-		
-		//North
-		checkPos = pos;
-		checkPos.y = checkPos.y - 1;
-		if ( checkPos.y < 0 ) 
-			checkPos.y = 10;
-		if ( checkPos.equals(pred.pos) ) {
-			return "NORTH";
-		} else {
-			//East
-			checkPos = pos;
-			checkPos.x = checkPos.x + 1;
-			if ( checkPos.x > 10 ) 
-				checkPos.x = 0;
-			if ( checkPos.equals(pred.pos) ) {
-				return "EAST";
-			} else {
-				//South
-				checkPos = pos;
-				checkPos.y = checkPos.y + 1;
-				if ( checkPos.y > 10 ) 
-					checkPos.y = 0;
-				if ( checkPos.equals(pred.pos) ) {
-					return "SOUTH";
-				} else {
-					//West
-					checkPos = pos;
-					checkPos.x = checkPos.x - 1;
-					if ( checkPos.x < 0 ) 
-						checkPos.x = 10;
-					if ( checkPos.equals(pred.pos) ) {
-						return "WEST";
-					} else {
-						return "CLEAR";
-					}
-				}
+		if( !(pos.x >= 0) || !(pos.x < 11) ){
+			pos.x = (pos.x+11) % 11;
+		}
+		else{
+			if( !(pos.y >= 0) || !(pos.y < 11) ){
+				pos.y = (pos.y+11) % 11;
 			}
 		}
+	}
+	
+	public String checkPred( Predator pred ) {		
+		String predLocation = "CLEAR";
+		int xDifference, yDifference;
 		
+		xDifference = pos.x - pred.pos.x;
+		yDifference = pos.y - pred.pos.y;
+		
+		if((xDifference == 1 || xDifference == -10) && yDifference == 0){
+			predLocation = "WEST";
+		}
+		else if((yDifference == 1 || yDifference == -10) && xDifference == 0){
+			predLocation = "NORTH";
+		}
+		else if((xDifference == -1 || xDifference == 10) && yDifference == 0){
+			predLocation = "EAST";
+		}
+		else if((yDifference == -1 || yDifference == 10) && xDifference == 0){
+			predLocation = "SOUTH";
+		}
+		return predLocation;
 	}
 	
 	public void to_String() {
