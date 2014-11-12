@@ -1,3 +1,4 @@
+
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,27 +98,103 @@ public class Game {
 			endState = true;
 		}
 	}
-	/*
+	
 	public void policyIteration(double discountFactor){
-		double[] initialPolicy = pred.policy;
-		Map<List<Point>, Double> valueMap = new HashMap<List<Point>, Double>();
-		valueMap = policyEvaluation(discountFactor, initialPolicy, valueMap );
-		
+		Map<List<Point>, String> policy = initPolicy();
+		initValueMap();
+		boolean policyStable = false;
+		while(!policyStable){
+			policyEvaluationForIt(discountFactor, policy);
+			Map<List<Point>, String> newPolicy = policyImprovement(discountFactor, policy);
+			if(policy.entrySet().equals(newPolicy.entrySet())){
+				policyStable = true;
+			}
+			else{
+				policy = newPolicy;
+			}
+		}
+		bestPolicy = policy;
+		printBoardActions(bestPolicy, new Point(5,5));
+		printBoard(valueMap, new Point(5,5));
 	}
 	
-	public Map<List<Point>, String> policyImprovement(double discountFactor, Map<List<Point>, Double> valueMap, Map<List<Point>> ){
-		boolean policystable = true;
-		Map<List<Point>, String> newPolicy = new HashMap<List<Point>, String>();
-		for (List<Point> key : valueMap.keySet()) {
-			String b = 
-			String bestAction = findBestAction(discountFactor, key.get(0), key.get(1));
-			
+	public void policyEvaluationForIt(double discountFactor, Map<List<Point>, String> policy ){
+		double theta = 0.000001;
+		double deltaV = 2*theta;
+		int counter = 1;
+		while( deltaV > theta ){
+			System.out.printf("Iteration %d\n", counter);
+			counter = counter + 1;
+			deltaV = 0;
+			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
+			for (List<Point> key : valueMap.keySet()) {
+				double oldValue = valueMap.get(key);
+			    double newValue = computeValueByPol(discountFactor, key.get(0), 
+			    		key.get(1), policy.get(key));
+			    newValueMap.put(key, newValue);
+			    double diffVal = Math.abs(oldValue - newValue);
+			    if(diffVal > deltaV){
+			    	deltaV = diffVal;
+			    }
+			}
+			System.out.printf("DeltaV is currently %.4f\n", deltaV);
+			valueMap = newValueMap;
 		}
-		Map<List<Point>, String> newPolicy = findBestPolicy(discountFactor, valueMap);
+	}
+	
+	public Map<List<Point>,String> policyImprovement(double discountFactor, Map<List<Point>, String> policy){
+		Map<List<Point>, String> newPolicy = new HashMap<List<Point>, String>();
+		for(List<Point> key : valueMap.keySet()){
+			String bNewPolicy = findBestAction(discountFactor, key.get(0), key.get(1));
+			newPolicy.put(key, bNewPolicy);
+		}
 		return newPolicy;
 	}
-	*/
 	
+	public double computeValueByPol(double discountFactor, Point predLoc, 
+			Point preyLoc, String policyMove){
+		double newValue = 0;
+		if(!predLoc.equals(preyLoc)){
+			double reward = 0;
+			Point move = move(policyMove);
+			Point newPredLoc = (Point) predLoc.clone();
+			newPredLoc.x = newPredLoc.x + move.x;
+			newPredLoc.y = newPredLoc.y + move.y;
+			if( !(newPredLoc.x >= 0) || !(newPredLoc.x < 11) ){
+				newPredLoc.x = (newPredLoc.x+11) % 11;
+			}
+			else{
+				if( !(newPredLoc.y >= 0) || !(newPredLoc.y < 11) ){
+					newPredLoc.y = (newPredLoc.y+11) % 11;
+				}
+			}
+			if(newPredLoc.equals(preyLoc)){
+				reward = 10;
+			}
+			newValue = reward + discountFactor*valueMap.get(Arrays.asList(newPredLoc, preyLoc));
+		}
+		return newValue;
+	}
+	
+	public Map<List<Point>, String> initPolicy(){
+		Map<List<Point>, String> initialPolicy = new HashMap<List<Point>,String>();
+		String move = "WEST";
+		for( int i = 0; i < 11; i++ ){
+			for( int j = 0; j < 11; j++ ){
+				Point predXY = new Point(i, j);
+				allPredPos.add(predXY);
+				for( int k = 0; k < 11; k++ ){
+					for( int l = 0; l < 11; l++ ){
+						Point preyXY = new Point(k,l);
+						List<Point> state = Arrays.asList(predXY, preyXY);
+						initialPolicy.put(state, move);
+					}
+				}
+			}
+		}
+		
+		return initialPolicy;
+	}
 	
 	public Map<List<Point>, Double> policyEvaluation(double discountFactor, double[] policy){
 		System.out.println("Starting policy evaluation...");
@@ -300,7 +377,7 @@ public class Game {
 			for(int i = 0; i < posNextPos.size(); i++){
 				double reward = 0;
 				Point nextPos = posNextPos.get(i);
-				if(nextPos.equals(preyXY) && !predXY.equals(preyXY)){
+				if(nextPos.equals(preyXY)){
 					reward = 10;
 				}
 				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
