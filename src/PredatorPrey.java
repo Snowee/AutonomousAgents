@@ -6,10 +6,10 @@ public class PredatorPrey {
 	public static void main(String[] args) {
 		double discountFactor = 0.8;
 		boolean playGame = false;
-		boolean policyIteration = true;
+		boolean policyIteration = false;
 		boolean valueIteration = false;
-		boolean policyEvaluation = false;
-		boolean useReduction = true;
+		boolean policyEvaluation = true;
+		boolean useReduction = false;
 		
 		if(policyIteration){
 			valueIteration = false;

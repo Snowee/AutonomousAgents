@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class Game {
 	private Predator pred;
@@ -105,6 +104,7 @@ public class Game {
 	}
 	
 	public void policyIteration(double discountFactor){
+		int counter = 0;
 		Map<List<Point>, String> policy = initPolicy();
 		initValueMap();
 		boolean policyStable = false;
@@ -117,17 +117,18 @@ public class Game {
 			else{
 				policy = newPolicy;
 			}
+			counter = counter + 1;
 		}
 		bestPolicy = policy;
 		printBoardActions(bestPolicy, new Point(5,5));
 		printBoard(valueMap, new Point(5,5));
+		System.out.printf("Policy iteration converged in %d iterations\n", counter);
 	}
 	
 	public void policyEvaluationForIt(double discountFactor, Map<List<Point>, String> policy ){
 		double deltaV = 2*theta;
 		int counter = 1;
 		while( deltaV > theta ){
-			System.out.printf("Iteration %d\n", counter);
 			counter = counter + 1;
 			deltaV = 0;
 			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
@@ -141,7 +142,6 @@ public class Game {
 			    	deltaV = diffVal;
 			    }
 			}
-			System.out.printf("DeltaV is currently %.4f\n", deltaV);
 			valueMap = newValueMap;
 		}
 	}
@@ -201,6 +201,7 @@ public class Game {
 	}
 	
 	public void reductionPolicyIteration(double discountFactor){
+		int counter = 0;
 		Map<Point, String> policy = reductionInitPolicy();
 		initStateSpace();
 		boolean policyStable = false;
@@ -213,17 +214,18 @@ public class Game {
 			else{
 				policy = newPolicy;
 			}
+			counter = counter + 1;
 		}
 		reductionBestPolicy = policy;
 		reductionPrintBoardActions(reductionBestPolicy, new Point(5,5));
 		reductionPrintBoard(stateSpace, new Point(5,5));
+		System.out.printf("Policy iteration with state space reduction converged in %d iterations\n", counter);
 	}
 	
 	public void reductionPolicyEvaluationForIt(double discountFactor, Map<Point, String> policy ){
 		double deltaV = 2*theta;
 		int counter = 1;
 		while( deltaV > theta ){
-			System.out.printf("Iteration %d\n", counter);
 			counter = counter + 1;
 			deltaV = 0;
 			Map<Point, Double> newValueMap = new HashMap<Point, Double>(stateSpace);
@@ -236,7 +238,6 @@ public class Game {
 			    	deltaV = diffVal;
 			    }
 			}
-			System.out.printf("DeltaV is currently %.4f\n", deltaV);
 			stateSpace = newValueMap;
 		}
 	}
@@ -282,38 +283,15 @@ public class Game {
 		
 		return initialPolicy;
 	}
-	/*
-	public void policyIteration(double discountFactor){
-		double[] initialPolicy = pred.policy;
-		Map<List<Point>, Double> valueMap = new HashMap<List<Point>, Double>();
-		valueMap = policyEvaluation(discountFactor, initialPolicy, valueMap );
-		
-	}
-	
-	public Map<List<Point>, String> policyImprovement(double discountFactor, Map<List<Point>, Double> valueMap, Map<List<Point>> ){
-		boolean policystable = true;
-		Map<List<Point>, String> newPolicy = new HashMap<List<Point>, String>();
-		for (List<Point> key : valueMap.keySet()) {
-			String b = 
-			String bestAction = findBestAction(discountFactor, key.get(0), key.get(1));
-			
-		}
-		Map<List<Point>, String> newPolicy = findBestPolicy(discountFactor, valueMap);
-		return newPolicy;
-	}
-	*/
-	
-	
+
 	public Map<List<Point>, Double> policyEvaluation(double discountFactor, double[] policy){
 		System.out.println("Starting policy evaluation...");
 		System.out.println("Initialize values for all states");
 		initValueMap();
 		double deltaV = theta*2;
-		int counter = 1;
+		int counter = 0;
 		
 		while( deltaV > theta ){
-			System.out.printf("Iteration %d\n", counter);
-			counter = counter + 1;
 			deltaV = 0;
 			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
 			for (List<Point> key : valueMap.keySet()) {
@@ -325,8 +303,8 @@ public class Game {
 			    	deltaV = diffVal;
 			    }
 			}
-			System.out.printf("DeltaV is currently %.4f\n", deltaV);
 			valueMap = newValueMap;
+			counter = counter + 1;
 		}
 		
 		List<Point> states = Arrays.asList(new Point(0,0), new Point(5,5), 
@@ -338,7 +316,7 @@ public class Game {
 			System.out.printf("Value of state Predator(%d,%d), Prey(%d,%d): %f\n",
 					states.get(i).y, states.get(i).x, states.get(i+1).y, states.get(i+1).x, value );
 		}	
-		
+		System.out.printf("Policy evaluation converged in %d iterations\n", counter);
 		return valueMap;
 	}
 	
@@ -403,10 +381,9 @@ public class Game {
 		System.out.println("Initialize values for all states");
 		initStateSpace();
 		double deltaV = theta*2;
-		int counter = 1;
+		int counter = 0;
 		
 		while( deltaV > theta ){
-			System.out.printf("Iteration %d\n", counter);
 			counter = counter + 1;
 			deltaV = 0;
 			Map<Point, Double> newValueMap = new HashMap<Point, Double>(stateSpace);
@@ -419,15 +396,15 @@ public class Game {
 			    	deltaV = diffVal;
 			    }
 			}
-			System.out.printf("DeltaV is currently %.12f\n", deltaV);
 			stateSpace = newValueMap;
-			reductionPrintBoard(stateSpace, new Point(3,3));
-
+			reductionPrintBoard(stateSpace, new Point(5,5));
+			counter = counter + 1;
 		}
 		// Output the values of all states in which the prey is located at (5,5)
-		reductionPrintBoard(stateSpace, new Point(3,3));
+		reductionPrintBoard(stateSpace, new Point(5,5));
 		Map<Point,String> bestPolMap = 	reductionFindBestPolicy( discountFactor, stateSpace );
-		reductionPrintBoardActions(bestPolMap, new Point(8,3));
+		reductionPrintBoardActions(bestPolMap, new Point(5,5));
+		System.out.printf("Value iteration with state space reduction converged in %d iterations\n", counter);
 	}
 	
 	public double reductionComputeValue(double discountFactor, Point state){
@@ -442,7 +419,6 @@ public class Game {
 				if( nextDistance == 0 ){
 					reward = 10;
 				}
-				//List<Point> statePrime = Arrays.asList(nextPos, preyXY);
 				double valueA = reward + discountFactor*stateSpace.get(nextPos);
 				if( valueA > value ){
 					value = valueA;
@@ -491,11 +467,9 @@ public class Game {
 		System.out.println("Initialize values for all states");
 		initValueMap();
 		double deltaV = theta*2;
-		int counter = 1;
+		int counter = 0;
 		
 		while( deltaV > theta ){
-			System.out.printf("Iteration %d\n", counter);
-			counter = counter + 1;
 			deltaV = 0;
 			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
 			for (List<Point> key : valueMap.keySet()) {
@@ -507,14 +481,14 @@ public class Game {
 			    	deltaV = diffVal;
 			    }
 			}
-			System.out.printf("DeltaV is currently %.4f\n", deltaV);
 			valueMap = newValueMap;
+			counter = counter + 1;
 		}
 		// Output the values of all states in which the prey is located at (5,5)
 		printBoard(valueMap, new Point(5,5));
 		Map<List<Point>,String> bestPolMap = findBestPolicy(discountFactor, valueMap);
-		printBoardActions(bestPolMap, new Point(8,3));
-		
+		printBoardActions(bestPolMap, new Point(5,5));
+		System.out.printf("Value iteration converged in %d iterations\n", counter);
 	}
 	
 	// Value function for policy evaluation algorithm
@@ -544,7 +518,7 @@ public class Game {
 			for(int i = 0; i < posNextPos.size(); i++){
 				double reward = 0;
 				Point nextPos = posNextPos.get(i);
-				if(nextPos.equals(preyXY) && !predXY.equals(preyXY)){
+				if(nextPos.equals(preyXY)){
 					reward = 10;
 				}
 				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
@@ -600,7 +574,7 @@ public class Game {
 			for(int i = 0; i < posNextPos.size(); i++){
 				double reward = 0;
 				Point nextPos = posNextPos.get(i);
-				if(nextPos.equals(preyXY) && !predXY.equals(preyXY)){
+				if(nextPos.equals(preyXY)){
 					reward = 10;
 				}
 				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
@@ -644,7 +618,6 @@ public class Game {
 		}
 		return bestAction;
 	}
-	
 	
 	public int calcDistance( Point state ) {
 		return Math.abs(state.x) + Math.abs(state.y);
