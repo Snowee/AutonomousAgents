@@ -6,17 +6,22 @@ import java.util.Map;
 
 public class Predator {
 	public Map<Point, ArrayList<Point>> nextPosPositions;
+	public Map<Point, ArrayList<Point>> nextPosDirections;
 	public Point pos;
 	public double[] policy = {0.2,0.2,0.2,0.2,0.2}; // Wait,N,E,S,West,
 	public String[] actions = {"WAIT", "NORTH", "EAST", "SOUTH", "WEST"};
 	public double[] probRange = {0.2, 0.4, 0.6, 0.8, 1};
 	
-	public Predator () {
+	public Predator ( boolean useReduction ) {
 		pos = new Point();
 		pos.x = 0;
 		pos.y = 0;
 		nextPosPositions = new HashMap<Point, ArrayList<Point>>();
-		initMap();
+		nextPosDirections = new HashMap<Point, ArrayList<Point>>();
+		if ( !useReduction )
+			initMap();
+		else
+			reductionInitMap();
 	}
 	
 	public String getMove () {
@@ -76,5 +81,41 @@ public class Predator {
 				nextPosPositions.put(currentPos, nextPoss);
 			}
 		}
+	}
+	
+	private void reductionInitMap(){
+		int[] moves = {0,1, -1,0, 0,-1, 1,0};
+		for(int i = -5; i < 6; i++){
+			for(int j = -5; j < 6; j++ ){
+				Point currentState = new Point(i, j);
+				ArrayList<Point> nextPoss = new ArrayList<Point>(5);
+				nextPoss.add(currentState);
+				for(int p = 0; p < 8; p=p+2 ){
+					Point newPos = (Point) currentState.clone();
+					newPos.translate(moves[p], moves[p+1]);
+					newPos = checkDirections( newPos );
+					nextPoss.add(newPos);
+				}
+				nextPosDirections.put(currentState, nextPoss);
+			}
+		}
+	}
+	
+	public Point checkDirections( Point nextPos ) {
+		if( nextPos.x > 5 ){
+			nextPos.x = nextPos.x - 11;
+		} else {
+			if( nextPos.x < -5 ) {
+				nextPos.x = 11 + nextPos.x;
+			}
+		}
+		if( nextPos.y > 5 ) {
+			nextPos.y = nextPos.y - 11;
+		} else {
+			if( nextPos.y < -5 ) {
+				nextPos.y = 11 + nextPos.y;
+			}
+		}
+		return nextPos;
 	}
 }
