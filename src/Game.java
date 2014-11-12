@@ -320,6 +320,33 @@ public class Game {
 		return valueMap;
 	}
 	
+	public Map<Point, Double> reductionPolicyEvaluation(double discountFactor, double[] policy){
+		System.out.println("Starting reduced policy evaluation...");
+		System.out.println("Initialize values for all states");
+		initStateSpace();
+		double deltaV = theta*2;
+		int counter = 0;
+		
+		while( deltaV > theta ){
+			deltaV = 0;
+			Map<Point, Double> newValueMap = new HashMap<Point, Double>(stateSpace);
+			for (Point key : stateSpace.keySet()) {
+				double oldValue = stateSpace.get(key);
+			    double newValue = reductionComputeValue(discountFactor, key, policy);
+			    newValueMap.put(key, newValue);
+			    double diffVal = Math.abs(oldValue - newValue);
+			    if(diffVal > deltaV){
+			    	deltaV = diffVal;
+			    }
+			}
+			stateSpace = newValueMap;
+			counter = counter + 1;
+		}
+		
+		System.out.printf("Reduced policy evaluation converged in %d iterations\n", counter);
+		return stateSpace;
+	}
+	
 	public void printBoardActions(Map<List<Point>, String> map, Point preyLoc){
 		String[][] board = new String[11][11];
 		for(int i = 0; i < allPredPos.size(); i++){
@@ -384,7 +411,6 @@ public class Game {
 		int counter = 0;
 		
 		while( deltaV > theta ){
-			counter = counter + 1;
 			deltaV = 0;
 			Map<Point, Double> newValueMap = new HashMap<Point, Double>(stateSpace);
 			for (Point key : stateSpace.keySet()) {
@@ -423,6 +449,25 @@ public class Game {
 				if( valueA > value ){
 					value = valueA;
 				}
+			}	
+		}
+		return value;
+	}
+	
+	public double reductionComputeValue(double discountFactor, Point state, double[] policy){
+		double value = 0;
+		ArrayList<Point> posNextDir = pred.nextPosDirections.get(state);
+		int distance = calcDistance( state );
+		if( distance != 0 ){
+			for(int i = 0; i < posNextDir.size(); i++){
+				double reward = 0;
+				Point nextPos = posNextDir.get(i);
+				int nextDistance = calcDistance( nextPos );
+				if( nextDistance == 0 ){
+					reward = 10;
+				}
+				double valueA = policy[i]*(reward + discountFactor*stateSpace.get(nextPos));
+				value = value + valueA;
 			}	
 		}
 		return value;

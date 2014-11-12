@@ -9,7 +9,7 @@ public class PredatorPrey {
 		boolean policyIteration = false;
 		boolean valueIteration = false;
 		boolean policyEvaluation = true;
-		boolean useReduction = false;
+		boolean useReduction = true;
 		
 		if(policyIteration){
 			valueIteration = false;
@@ -34,7 +34,7 @@ public class PredatorPrey {
 					game.valueIteration(discountFactor);
 				}
 			}
-			else if(playGame){
+			else if(playGame) {
 				ArrayList<Integer> steps = new ArrayList<Integer>();
 				int nrOfRuns = 1;
 				int sum = 0;
@@ -72,9 +72,8 @@ public class PredatorPrey {
 				Prey prey = new Prey();
 				Game game = new Game(pred, prey);
 				if(policyEvaluation){
-					game.policyEvaluation(discountFactor, pred.policy);
-				}
-				else if(policyIteration){
+					game.reductionPolicyEvaluation(discountFactor, pred.policy);
+				}else if(policyIteration){
 					game.reductionPolicyIteration(discountFactor);
 				}
 				else if(valueIteration){
