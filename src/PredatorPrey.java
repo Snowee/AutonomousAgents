@@ -5,10 +5,10 @@ public class PredatorPrey {
 
 	public static void main(String[] args) {
 		double discountFactor = 0.8;
-		boolean playGame = false;
-		boolean policyIteration = false;
+		boolean playGame = true;
+		boolean policyIteration = true;
 		boolean valueIteration = false;
-		boolean policyEvaluation = true;
+		boolean policyEvaluation = false;
 		boolean useReduction = true;
 		
 		if(policyIteration){
@@ -54,7 +54,7 @@ public class PredatorPrey {
 						game.valueIteration(discountFactor);
 						
 					}
-					int step = game.start(useRandomPolicy);
+					int step = game.start(useRandomPolicy, useReduction);
 					sum = sum + step;
 					steps.add(step);
 				}	
@@ -100,7 +100,7 @@ public class PredatorPrey {
 						game.reductionValueIteration(discountFactor);
 						
 					}
-					int step = game.start(useRandomPolicy);
+					int step = game.start(useRandomPolicy, useReduction);
 					sum = sum + step;
 					steps.add(step);
 				}	

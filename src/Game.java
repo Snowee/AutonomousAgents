@@ -27,7 +27,7 @@ public class Game {
 		reductionBestPolicy = new HashMap<Point, String>();
 	}
 	
-	public int start(boolean randomPolicy) {
+	public int start(boolean randomPolicy, boolean reduction) {
 		int counter = 0;
 		printGameState(pred.pos, prey.pos);
 		while( endState == false ) {			
@@ -41,7 +41,17 @@ public class Game {
 			if(randomPolicy){
 				predMove = pred.getMove();
 			}
-			else predMove = bestPolicy.get(Arrays.asList(pred.pos, prey.pos));
+			else {
+				if ( !reduction )
+					predMove = bestPolicy.get(Arrays.asList(pred.pos, prey.pos));
+				else {
+					Point state = new Point();
+					state.x = prey.pos.x - pred.pos.x;
+					state.y = prey.pos.y - pred.pos.y;
+					state = pred.checkDirections(state);
+					predMove = reductionBestPolicy.get(state);
+				}
+			}
 			
 			Point moveCoordsPred = move( predMove );
 			pred.newPos( moveCoordsPred );
@@ -101,6 +111,46 @@ public class Game {
 		if ( pred.pos.equals( prey.pos ) ) {
 			endState = true;
 		}
+	}
+	
+	public int calcDistance( Point state ) {
+		return Math.abs(state.x) + Math.abs(state.y);
+	}
+	
+	public Map<List<Point>, Double> policyEvaluation(double discountFactor, double[] policy){
+		System.out.println("Starting policy evaluation...");
+		System.out.println("Initialize values for all states");
+		initValueMap();
+		double deltaV = theta*2;
+		int counter = 0;
+		
+		while( deltaV > theta ){
+			deltaV = 0;
+			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
+			for (List<Point> key : valueMap.keySet()) {
+				double oldValue = valueMap.get(key);
+			    double newValue = computeValue(discountFactor, key.get(0), key.get(1), policy);
+			    newValueMap.put(key, newValue);
+			    double diffVal = Math.abs(oldValue - newValue);
+			    if(diffVal > deltaV){
+			    	deltaV = diffVal;
+			    }
+			}
+			valueMap = newValueMap;
+			counter = counter + 1;
+		}
+		
+		List<Point> states = Arrays.asList(new Point(0,0), new Point(5,5), 
+				new Point(3,2), new Point(4,5), new Point(10,2), 
+				new Point(0,10), new Point(10,10), new Point(0,0));
+		for(int i = 0; i < states.size(); i=i+2){
+			List<Point> state = Arrays.asList(states.get(i), states.get(i+1));
+			double value = valueMap.get(state);
+			System.out.printf("Value of state Predator(%d,%d), Prey(%d,%d): %f\n",
+					states.get(i).y, states.get(i).x, states.get(i+1).y, states.get(i+1).x, value );
+		}	
+		System.out.printf("Policy evaluation converged in %d iterations\n", counter);
+		return valueMap;
 	}
 	
 	public void policyIteration(double discountFactor){
@@ -200,6 +250,125 @@ public class Game {
 		return initialPolicy;
 	}
 	
+	
+	public void valueIteration(double discountFactor){
+		System.out.println("Starting value iteration...");
+		System.out.println("Initialize values for all states");
+		initValueMap();
+		double deltaV = theta*2;
+		int counter = 0;
+		
+		while( deltaV > theta ){
+			deltaV = 0;
+			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
+			for (List<Point> key : valueMap.keySet()) {
+				double oldValue = valueMap.get(key);
+			    double newValue = computeValue(discountFactor, key.get(0), key.get(1));
+			    newValueMap.put(key, newValue);
+			    double diffVal = Math.abs(oldValue - newValue);
+			    if(diffVal > deltaV){
+			    	deltaV = diffVal;
+			    }
+			}
+			valueMap = newValueMap;
+			counter = counter + 1;
+		}
+		// Output the values of all states in which the prey is located at (5,5)
+		printBoard(valueMap, new Point(5,5));
+		Map<List<Point>,String> bestPolMap = findBestPolicy(discountFactor, valueMap);
+		printBoardActions(bestPolMap, new Point(5,5));
+		System.out.printf("Value iteration converged in %d iterations\n", counter);
+	}
+	
+	// Value function for policy evaluation algorithm
+	public double computeValue(double discountFactor, Point predXY, Point preyXY, double[] policy){
+		double value = 0;
+		ArrayList<Point> posNextPos = pred.nextPosPositions.get(predXY);
+		if(!predXY.equals(preyXY)){
+			for(int i = 0; i < posNextPos.size(); i++){
+				double reward = 0;
+				Point nextPos = posNextPos.get(i);
+				if(nextPos.equals(preyXY)){
+					reward = 10;
+				}
+				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
+				double valueA = policy[i]*(reward + discountFactor*valueMap.get(statePrime));
+				value = value + valueA;
+			}	
+		}
+		return value;
+	}
+	
+	// Value function (Bellman equation) for value iteration algorithm
+	public double computeValue(double discountFactor, Point predXY, Point preyXY){
+		double value = 0;
+		ArrayList<Point> posNextPos = pred.nextPosPositions.get(predXY);
+		if(!predXY.equals(preyXY)){
+			for(int i = 0; i < posNextPos.size(); i++){
+				double reward = 0;
+				Point nextPos = posNextPos.get(i);
+				if(nextPos.equals(preyXY)){
+					reward = 10;
+				}
+				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
+				double valueA = reward + discountFactor*valueMap.get(statePrime);
+				if( valueA > value ){
+					value = valueA;
+				}
+			}	
+		}
+		return value;
+	}
+	
+	private void initValueMap(){
+		for( int i = 0; i < 11; i++ ){
+			for( int j = 0; j < 11; j++ ){
+				Point predXY = new Point(i, j);
+				allPredPos.add(predXY);
+				for( int k = 0; k < 11; k++ ){
+					for( int l = 0; l < 11; l++ ){
+						Point preyXY = new Point(k,l);
+						List<Point> state = Arrays.asList(predXY, preyXY);
+						valueMap.put(state, 0.0);
+					}
+				}
+			}
+		}
+	}
+	
+	public Map<List<Point>, String> findBestPolicy(double discountFactor, Map<List<Point>, Double> finalValueMap){
+		for (List<Point> key : valueMap.keySet()) {
+			String bestAction = findBestAction(discountFactor, key.get(0), key.get(1));
+			bestPolicy.put(key, bestAction);
+		}
+		return bestPolicy;
+	}
+	
+	// Find best action after value iteration
+	public String findBestAction(double discountFactor, Point predXY, Point preyXY){
+		double value = 0;
+		String bestAction = "";
+		ArrayList<Point> posNextPos = pred.nextPosPositions.get(predXY);
+		if(!predXY.equals(preyXY)){
+			for(int i = 0; i < posNextPos.size(); i++){
+				double reward = 0;
+				Point nextPos = posNextPos.get(i);
+				if(nextPos.equals(preyXY)){
+					reward = 10;
+				}
+				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
+				double valueA = reward + discountFactor*valueMap.get(statePrime);
+				if( valueA > value ){
+					value = valueA;
+					bestAction = pred.actions[i];
+				}
+			}	
+		}
+		return bestAction;
+	}
+
+	
+	
 	public void reductionPolicyIteration(double discountFactor){
 		int counter = 0;
 		Map<Point, String> policy = reductionInitPolicy();
@@ -284,41 +453,7 @@ public class Game {
 		return initialPolicy;
 	}
 
-	public Map<List<Point>, Double> policyEvaluation(double discountFactor, double[] policy){
-		System.out.println("Starting policy evaluation...");
-		System.out.println("Initialize values for all states");
-		initValueMap();
-		double deltaV = theta*2;
-		int counter = 0;
-		
-		while( deltaV > theta ){
-			deltaV = 0;
-			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
-			for (List<Point> key : valueMap.keySet()) {
-				double oldValue = valueMap.get(key);
-			    double newValue = computeValue(discountFactor, key.get(0), key.get(1), policy);
-			    newValueMap.put(key, newValue);
-			    double diffVal = Math.abs(oldValue - newValue);
-			    if(diffVal > deltaV){
-			    	deltaV = diffVal;
-			    }
-			}
-			valueMap = newValueMap;
-			counter = counter + 1;
-		}
-		
-		List<Point> states = Arrays.asList(new Point(0,0), new Point(5,5), 
-				new Point(3,2), new Point(4,5), new Point(10,2), 
-				new Point(0,10), new Point(10,10), new Point(0,0));
-		for(int i = 0; i < states.size(); i=i+2){
-			List<Point> state = Arrays.asList(states.get(i), states.get(i+1));
-			double value = valueMap.get(state);
-			System.out.printf("Value of state Predator(%d,%d), Prey(%d,%d): %f\n",
-					states.get(i).y, states.get(i).x, states.get(i+1).y, states.get(i+1).x, value );
-		}	
-		System.out.printf("Policy evaluation converged in %d iterations\n", counter);
-		return valueMap;
-	}
+	
 	
 	public Map<Point, Double> reductionPolicyEvaluation(double discountFactor, double[] policy){
 		System.out.println("Starting reduced policy evaluation...");
@@ -507,90 +642,7 @@ public class Game {
 		return loc;
 	}
 	
-	public void valueIteration(double discountFactor){
-		System.out.println("Starting value iteration...");
-		System.out.println("Initialize values for all states");
-		initValueMap();
-		double deltaV = theta*2;
-		int counter = 0;
-		
-		while( deltaV > theta ){
-			deltaV = 0;
-			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
-			for (List<Point> key : valueMap.keySet()) {
-				double oldValue = valueMap.get(key);
-			    double newValue = computeValue(discountFactor, key.get(0), key.get(1));
-			    newValueMap.put(key, newValue);
-			    double diffVal = Math.abs(oldValue - newValue);
-			    if(diffVal > deltaV){
-			    	deltaV = diffVal;
-			    }
-			}
-			valueMap = newValueMap;
-			counter = counter + 1;
-		}
-		// Output the values of all states in which the prey is located at (5,5)
-		printBoard(valueMap, new Point(5,5));
-		Map<List<Point>,String> bestPolMap = findBestPolicy(discountFactor, valueMap);
-		printBoardActions(bestPolMap, new Point(5,5));
-		System.out.printf("Value iteration converged in %d iterations\n", counter);
-	}
 	
-	// Value function for policy evaluation algorithm
-	public double computeValue(double discountFactor, Point predXY, Point preyXY, double[] policy){
-		double value = 0;
-		ArrayList<Point> posNextPos = pred.nextPosPositions.get(predXY);
-		if(!predXY.equals(preyXY)){
-			for(int i = 0; i < posNextPos.size(); i++){
-				double reward = 0;
-				Point nextPos = posNextPos.get(i);
-				if(nextPos.equals(preyXY)){
-					reward = 10;
-				}
-				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
-				double valueA = policy[i]*(reward + discountFactor*valueMap.get(statePrime));
-				value = value + valueA;
-			}	
-		}
-		return value;
-	}
-	
-	// Value function (Bellman equation) for value iteration algorithm
-	public double computeValue(double discountFactor, Point predXY, Point preyXY){
-		double value = 0;
-		ArrayList<Point> posNextPos = pred.nextPosPositions.get(predXY);
-		if(!predXY.equals(preyXY)){
-			for(int i = 0; i < posNextPos.size(); i++){
-				double reward = 0;
-				Point nextPos = posNextPos.get(i);
-				if(nextPos.equals(preyXY)){
-					reward = 10;
-				}
-				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
-				double valueA = reward + discountFactor*valueMap.get(statePrime);
-				if( valueA > value ){
-					value = valueA;
-				}
-			}	
-		}
-		return value;
-	}
-	
-	private void initValueMap(){
-		for( int i = 0; i < 11; i++ ){
-			for( int j = 0; j < 11; j++ ){
-				Point predXY = new Point(i, j);
-				allPredPos.add(predXY);
-				for( int k = 0; k < 11; k++ ){
-					for( int l = 0; l < 11; l++ ){
-						Point preyXY = new Point(k,l);
-						List<Point> state = Arrays.asList(predXY, preyXY);
-						valueMap.put(state, 0.0);
-					}
-				}
-			}
-		}
-	}
 	
 	private void initStateSpace() {
 		int[] directionValues = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5};
@@ -602,37 +654,7 @@ public class Game {
 		}
 	}
 	
-	public Map<List<Point>, String> findBestPolicy(double discountFactor, Map<List<Point>, Double> finalValueMap){
-		for (List<Point> key : valueMap.keySet()) {
-			String bestAction = findBestAction(discountFactor, key.get(0), key.get(1));
-			bestPolicy.put(key, bestAction);
-		}
-		return bestPolicy;
-	}
-	
-	// Find best action after value iteration
-	public String findBestAction(double discountFactor, Point predXY, Point preyXY){
-		double value = 0;
-		String bestAction = "";
-		ArrayList<Point> posNextPos = pred.nextPosPositions.get(predXY);
-		if(!predXY.equals(preyXY)){
-			for(int i = 0; i < posNextPos.size(); i++){
-				double reward = 0;
-				Point nextPos = posNextPos.get(i);
-				if(nextPos.equals(preyXY)){
-					reward = 10;
-				}
-				List<Point> statePrime = Arrays.asList(nextPos, preyXY);
-				double valueA = reward + discountFactor*valueMap.get(statePrime);
-				if( valueA > value ){
-					value = valueA;
-					bestAction = pred.actions[i];
-				}
-			}	
-		}
-		return bestAction;
-	}
-	
+		
 	public Map<Point, String> reductionFindBestPolicy(double discountFactor, Map<Point, Double> finalValueMap){
 		for (Point key : stateSpace.keySet()) {
 			String bestAction = reductionFindBestAction(discountFactor, key);
@@ -662,9 +684,5 @@ public class Game {
 			}	
 		}
 		return bestAction;
-	}
-	
-	public int calcDistance( Point state ) {
-		return Math.abs(state.x) + Math.abs(state.y);
 	}
 }
