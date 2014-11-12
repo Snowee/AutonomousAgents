@@ -27,9 +27,9 @@ public class Game {
 		reductionBestPolicy = new HashMap<Point, String>();
 	}
 	
-	public int start(boolean randomPolicy, boolean reduction) {
+	public int start( boolean randomPolicy, boolean reduction ) {
 		int counter = 0;
-		printGameState(pred.pos, prey.pos);
+		printGameState( pred.pos, prey.pos );
 		while( endState == false ) {			
 			String predNear = prey.checkPred( pred );
 			String preyMove = prey.getMove( predNear );
@@ -38,38 +38,39 @@ public class Game {
 			//printGameState(pred.pos, prey.pos);
 			
 			String predMove;
-			if(randomPolicy){
+			if( randomPolicy ) {
 				predMove = pred.getMove();
 			}
 			else {
-				if ( !reduction )
-					predMove = bestPolicy.get(Arrays.asList(pred.pos, prey.pos));
+				if( !reduction )
+					predMove = bestPolicy.get(
+							Arrays.asList( pred.pos, prey.pos ));
 				else {
 					Point state = new Point();
 					state.x = prey.pos.x - pred.pos.x;
 					state.y = prey.pos.y - pred.pos.y;
 					state = pred.checkDirections(state);
-					predMove = reductionBestPolicy.get(state);
+					predMove = reductionBestPolicy.get( state );
 				}
 			}
 			
 			Point moveCoordsPred = move( predMove );
 			pred.newPos( moveCoordsPred );
 			counter += 1;
-			//printGameState(pred.pos, prey.pos);
+			//printGameState( pred.pos, prey.pos );
 			checkStatus();
 		}
-		System.out.printf("Game ended in %d steps\n", counter);
+		System.out.printf( "Game ended in %d steps\n", counter );
 		return counter;
 	}
 	
-	public void printGameState(Point pred, Point prey){
+	public void printGameState( Point pred, Point prey ) {
 		String[][] board = new String[11][11];
 		board[prey.y][prey.x] = "q";
 		board[pred.y][pred.x] = "P";
-		for(String[] row : board){
-	        for (String r : row) {
-	        	if(r == null)
+		for( String[] row : board ) {
+	        for( String r : row ) {
+	        	if( r == null )
 	        		System.out.printf("-\t");
 	        	else System.out.printf("%s\t", r);
 	        }
@@ -108,25 +109,35 @@ public class Game {
 	}
 	
 	public void checkStatus() {
-		if ( pred.pos.equals( prey.pos ) ) {
+		if( pred.pos.equals( prey.pos ) ) {
 			endState = true;
 		}
 	}
 	
 	public int calcDistance( Point state ) {
-		return Math.abs(state.x) + Math.abs(state.y);
+		return Math.abs( state.x ) + Math.abs( state.y );
 	}
 	
-	public Map<List<Point>, Double> policyEvaluation(double discountFactor, double[] policy){
-		System.out.println("Starting policy evaluation...");
-		System.out.println("Initialize values for all states");
+	public Point checkLoc( Point loc ) {
+		if( !( loc.x >= 0 ) || !( loc.x < 11 ) ) {
+			loc.x = ( loc.x + 11 ) % 11;
+		}
+		if( !( loc.y >= 0 ) || !( loc.y < 11 ) ) {
+				loc.y = ( loc.y + 11 ) % 11;
+		}
+		return loc;
+	}
+	
+	public Map<List<Point>, Double> policyEvaluation( double discountFactor, double[] policy ) {
+		System.out.println( "Starting policy evaluation..." );
+		System.out.println( "Initialize values for all states" );
 		initValueMap();
 		double deltaV = theta*2;
 		int counter = 0;
 		
-		while( deltaV > theta ){
+		while( deltaV > theta ) {
 			deltaV = 0;
-			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>(valueMap);
+			Map<List<Point>, Double> newValueMap = new HashMap<List<Point>, Double>( valueMap );
 			for (List<Point> key : valueMap.keySet()) {
 				double oldValue = valueMap.get(key);
 			    double newValue = computeValue(discountFactor, key.get(0), key.get(1), policy);
@@ -250,7 +261,6 @@ public class Game {
 		return initialPolicy;
 	}
 	
-	
 	public void valueIteration(double discountFactor){
 		System.out.println("Starting value iteration...");
 		System.out.println("Initialize values for all states");
@@ -366,8 +376,71 @@ public class Game {
 		}
 		return bestAction;
 	}
-
 	
+	public void printBoardActions(Map<List<Point>, String> map, Point preyLoc){
+		String[][] board = new String[11][11];
+		for(int i = 0; i < allPredPos.size(); i++){
+			List<Point> state = Arrays.asList(allPredPos.get(i), preyLoc);
+			String action = map.get(state);
+			board[allPredPos.get(i).y][allPredPos.get(i).x] = action;
+		}
+		for(String[] row : board){
+	        for (String r : row) {
+	        	System.out.printf("%s\t", r);
+	        }
+	        System.out.println();
+	    }
+		System.out.println();
+	}
+
+	public void printBoard(Map<List<Point>, Double> map, Point preyLoc){
+		double[][] board = new double[11][11];
+		for(int i = 0; i < allPredPos.size(); i++){
+			List<Point> state = Arrays.asList(allPredPos.get(i), preyLoc);
+			double value = map.get(state);
+			board[allPredPos.get(i).y][allPredPos.get(i).x] = value;
+		}
+		for(double[] row : board){
+	        for (double r : row) {
+	        	if(r == 0)
+	        		System.out.print("0         ");
+	        	else
+	        		System.out.printf("%.9f", r);
+	            System.out.print("\t");
+	        }
+	        System.out.println();
+	    }
+		System.out.println();
+	}
+	
+	
+	// Begin Reduced Functions
+	public Map<Point, Double> reductionPolicyEvaluation(double discountFactor, double[] policy){
+		System.out.println("Starting reduced policy evaluation...");
+		System.out.println("Initialize values for all states");
+		initStateSpace();
+		double deltaV = theta*2;
+		int counter = 0;
+		
+		while( deltaV > theta ){
+			deltaV = 0;
+			Map<Point, Double> newValueMap = new HashMap<Point, Double>(stateSpace);
+			for (Point key : stateSpace.keySet()) {
+				double oldValue = stateSpace.get(key);
+			    double newValue = reductionComputeValue(discountFactor, key, policy);
+			    newValueMap.put(key, newValue);
+			    double diffVal = Math.abs(oldValue - newValue);
+			    if(diffVal > deltaV){
+			    	deltaV = diffVal;
+			    }
+			}
+			stateSpace = newValueMap;
+			counter = counter + 1;
+		}
+		
+		System.out.printf("Reduced policy evaluation converged in %d iterations\n", counter);
+		return stateSpace;
+	}
 	
 	public void reductionPolicyIteration(double discountFactor){
 		int counter = 0;
@@ -452,92 +525,7 @@ public class Game {
 		
 		return initialPolicy;
 	}
-
 	
-	
-	public Map<Point, Double> reductionPolicyEvaluation(double discountFactor, double[] policy){
-		System.out.println("Starting reduced policy evaluation...");
-		System.out.println("Initialize values for all states");
-		initStateSpace();
-		double deltaV = theta*2;
-		int counter = 0;
-		
-		while( deltaV > theta ){
-			deltaV = 0;
-			Map<Point, Double> newValueMap = new HashMap<Point, Double>(stateSpace);
-			for (Point key : stateSpace.keySet()) {
-				double oldValue = stateSpace.get(key);
-			    double newValue = reductionComputeValue(discountFactor, key, policy);
-			    newValueMap.put(key, newValue);
-			    double diffVal = Math.abs(oldValue - newValue);
-			    if(diffVal > deltaV){
-			    	deltaV = diffVal;
-			    }
-			}
-			stateSpace = newValueMap;
-			counter = counter + 1;
-		}
-		
-		System.out.printf("Reduced policy evaluation converged in %d iterations\n", counter);
-		return stateSpace;
-	}
-	
-	public void printBoardActions(Map<List<Point>, String> map, Point preyLoc){
-		String[][] board = new String[11][11];
-		for(int i = 0; i < allPredPos.size(); i++){
-			List<Point> state = Arrays.asList(allPredPos.get(i), preyLoc);
-			String action = map.get(state);
-			board[allPredPos.get(i).y][allPredPos.get(i).x] = action;
-		}
-		for(String[] row : board){
-	        for (String r : row) {
-	        	System.out.printf("%s\t", r);
-	        }
-	        System.out.println();
-	    }
-		System.out.println();
-	}
-	
-	public void reductionPrintBoardActions(Map<Point, String> map, Point preyLoc){
-		String[][] board = new String[11][11];
-		for( Map.Entry<Point, String> entry : map.entrySet() ){
-			Point state = entry.getKey();
-			String action = map.get(state);
-			Point newState = (Point) preyLoc.clone();
-			newState.x -= state.x;
-			newState.y -= state.y;
-			newState = checkLoc( newState );
-			board[newState.y][newState.x] = action;
-		}
-		for(String[] row : board){
-	        for (String r : row) {
-	        	System.out.printf("%s\t", r);
-	        }
-	        System.out.println();
-	    }
-		System.out.println();
-	}
-	
-	public void printBoard(Map<List<Point>, Double> map, Point preyLoc){
-		double[][] board = new double[11][11];
-		for(int i = 0; i < allPredPos.size(); i++){
-			List<Point> state = Arrays.asList(allPredPos.get(i), preyLoc);
-			double value = map.get(state);
-			board[allPredPos.get(i).y][allPredPos.get(i).x] = value;
-		}
-		for(double[] row : board){
-	        for (double r : row) {
-	        	if(r == 0)
-	        		System.out.print("0         ");
-	        	else
-	        		System.out.printf("%.9f", r);
-	            System.out.print("\t");
-	        }
-	        System.out.println();
-	    }
-		System.out.println();
-	}
-		
 	public void reductionValueIteration( double discountFactor ) {
 		System.out.println("Starting reduced value iteration...");
 		System.out.println("Initialize values for all states");
@@ -607,6 +595,26 @@ public class Game {
 		}
 		return value;
 	}
+		
+	public void reductionPrintBoardActions(Map<Point, String> map, Point preyLoc){
+		String[][] board = new String[11][11];
+		for( Map.Entry<Point, String> entry : map.entrySet() ){
+			Point state = entry.getKey();
+			String action = map.get(state);
+			Point newState = (Point) preyLoc.clone();
+			newState.x -= state.x;
+			newState.y -= state.y;
+			newState = checkLoc( newState );
+			board[newState.y][newState.x] = action;
+		}
+		for(String[] row : board){
+	        for (String r : row) {
+	        	System.out.printf("%s\t", r);
+	        }
+	        System.out.println();
+	    }
+		System.out.println();
+	}
 	
 	public void reductionPrintBoard(Map<Point, Double> map, Point preyLoc){
 		double[][] board = new double[11][11];
@@ -631,19 +639,7 @@ public class Game {
 	    }
 		System.out.println();
 	}	
-	
-	public Point checkLoc( Point loc ) {
-		if( !(loc.x >= 0) || !(loc.x < 11) ){
-			loc.x = (loc.x+11) % 11;
-		}
-		if( !(loc.y >= 0) || !(loc.y < 11) ){
-				loc.y = (loc.y+11) % 11;
-		}
-		return loc;
-	}
-	
-	
-	
+		
 	private void initStateSpace() {
 		int[] directionValues = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5};
 		for ( int i = 0; i < 11; i++ ) {
@@ -653,7 +649,6 @@ public class Game {
 			}
 		}
 	}
-	
 		
 	public Map<Point, String> reductionFindBestPolicy(double discountFactor, Map<Point, Double> finalValueMap){
 		for (Point key : stateSpace.keySet()) {

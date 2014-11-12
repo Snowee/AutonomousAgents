@@ -26,7 +26,7 @@ public class Prey {
 			}
 		} else {
 			List<String> remainingMoves = new ArrayList<String>(Arrays.asList(possibleMoves));
-			List<Double> remainingMoveProbs = Arrays.asList(0.2, 0.2+1*(0.80/3), 0.2+2*(0.80/3), 0.2+3*(0.80/3));
+			List<Double> remainingMoveProbs = Arrays.asList(0.8, 0.2+1*(0.20/3), 0.2+2*(0.20/3), 0.2+3*(0.20/3));
 			remainingMoves.remove( predNear );
 			for ( int i = 0; i < remainingMoves.size(); i++ ) {
 				if ( chance < remainingMoveProbs.get(i) ) {

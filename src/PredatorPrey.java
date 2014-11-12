@@ -36,7 +36,7 @@ public class PredatorPrey {
 			}
 			else if(playGame) {
 				ArrayList<Integer> steps = new ArrayList<Integer>();
-				int nrOfRuns = 1;
+				int nrOfRuns = 100;
 				int sum = 0;
 				
 				boolean useRandomPolicy = true;
@@ -82,7 +82,7 @@ public class PredatorPrey {
 			}
 			else if(playGame){
 				ArrayList<Integer> steps = new ArrayList<Integer>();
-				int nrOfRuns = 1;
+				int nrOfRuns = 100;
 				int sum = 0;
 				
 				boolean useRandomPolicy = true;
