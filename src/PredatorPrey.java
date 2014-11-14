@@ -6,10 +6,10 @@ public class PredatorPrey {
 	public static void main( String[] args ) {
 		double discountFactor = 0.8;
 		// boolean if the game is run
-		boolean playGame = false;
+		boolean playGame = true;
 		// Booleans determining which algorithms to run
-		boolean policyIteration = false;
-		boolean valueIteration = true;
+		boolean policyIteration = true;
+		boolean valueIteration = false;
 		boolean policyEvaluation = false;
 		// Boolean if reduced state space is used
 		boolean useReduction = true;
