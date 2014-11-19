@@ -96,4 +96,9 @@ public class Predator {
 		}
 		return nextPos;
 	}
+	
+	public void test()
+	{
+		
+	}
 }
