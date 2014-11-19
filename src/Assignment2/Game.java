@@ -211,7 +211,7 @@ public class Game {
 	}	
 		
 	public void qlearning(double discountFactor, int nEpisodes){
-		initQvalues();
+		initQvalues( 15.0 );
 		for( int i = 0; i < nEpisodes; i++){
 			Point s = initS();
 			boolean terminalState = false;
@@ -258,11 +258,11 @@ public class Game {
 	}
 	
 	// Initialize reduced state space
-	private void initQvalues() {
+	private void initQvalues( double qInitvals ) {
 		int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 		Map<Point, Double> actionVal = new HashMap<Point, Double>();
 		for(int i = 0; i < pred.actions.length; i++){
-			actionVal.put(move(pred.actions[i]), 15.0);
+			actionVal.put(move(pred.actions[i]), qInitvals );
 		}
 		for( int i = 0; i < 11; i++ ) {
 			for( int j = 0; j < 11; j++ ) {
@@ -314,7 +314,7 @@ public class Game {
 	
 	
 	public void Sarsa(double discountFactor, double learningRate, int nEpisodes) {
-		initQvalues();
+		initQvalues( 15.0 );
 		for( int i = 0; i < nEpisodes; i++ ) {
 			Point s = initS();
 			Point action = getActionGreedy( s );
