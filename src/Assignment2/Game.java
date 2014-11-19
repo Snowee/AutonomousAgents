@@ -16,7 +16,7 @@ public class Game {
 	// Class variables for non reduced algorithms
 	public List<Point> allPredPos;
 	// Class variables for reduced algorithms
-	public Map<Point, Map<String, Double>> Qvalues;
+	public Map<Point, Map<Point, Double>> Qvalues;
 	public Map<Point, String> bestPolicy;
 	private Point[] statesArray;
 	
@@ -26,7 +26,7 @@ public class Game {
 		this.prey = prey;
 		endState = false;
 		// Initialize all data structures to be used
-		Qvalues = new HashMap<Point, Map<String, Double>>();
+		Qvalues = new HashMap<Point, Map<Point, Double>>();
 		allPredPos = new ArrayList<Point>();
 		bestPolicy = new HashMap<Point, String>();
 	}
@@ -211,7 +211,7 @@ public class Game {
 	}	
 		
 	public void qlearning(double discountFactor, int nEpisodes){
-		initQvalues();
+		initQvalues( 15.0 );
 		for( int i = 0; i < nEpisodes; i++){
 			Point s = initS();
 			boolean terminalState = false;
@@ -230,22 +230,22 @@ public class Game {
 		double epsilon = 0.1;
 		Random rand = new Random();
 		double chance = rand.nextDouble();
-		String action = "";
+		Point action = new Point();
 		// Select random action with probability epsilon
 		if(chance < epsilon){
-			action = pred.actions[rand.nextInt(pred.actions.length)];
+			action = move(pred.actions[rand.nextInt(pred.actions.length)]);
 		}
 		// Select optimal action
 		else{
 			double maxVal = 0;
-			Map<String, Double> valActFromState = Qvalues.get(state);
-			for(String act : valActFromState.keySet()){
+			Map<Point, Double> valActFromState = Qvalues.get(state);
+			for(Point act : valActFromState.keySet()){
 				if(valActFromState.get(act) >= maxVal){
 					action = act;
 				}
 			}
 		}
-		Point actionGr = move(action);
+		Point actionGr = action;
 		
 		return actionGr;
 	}
@@ -258,17 +258,17 @@ public class Game {
 	}
 	
 	// Initialize reduced state space
-	private void initQvalues() {
+	private void initQvalues( double qInitvals ) {
 		int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
-		Map<String, Double> actionVal = new HashMap<String, Double>();
+		Map<Point, Double> actionVal = new HashMap<Point, Double>();
 		for(int i = 0; i < pred.actions.length; i++){
-			actionVal.put(pred.actions[i], 0.0);
+			actionVal.put(move(pred.actions[i]), qInitvals );
 		}
 		for( int i = 0; i < 11; i++ ) {
 			for( int j = 0; j < 11; j++ ) {
 				Point directionVector = 
 						new Point( directionValues[i], directionValues[j] );
-				Map<String, Double> actionQVal = new HashMap<String, Double>(actionVal);
+				Map<Point, Double> actionQVal = new HashMap<Point, Double>(actionVal);
 				Qvalues.put( directionVector, actionQVal );
 			}
 		}
@@ -311,4 +311,37 @@ public class Game {
 		}
 		return bestAction;
 	}*/
+	
+	
+	public void Sarsa(double discountFactor, double learningRate, int nEpisodes) {
+		initQvalues( 15.0 );
+		for( int i = 0; i < nEpisodes; i++ ) {
+			Point s = initS();
+			Point action = getActionGreedy( s );
+			boolean terminalState = false;
+			while( !terminalState ) {
+				Point sPrime = (Point) s.clone();
+				sPrime.translate( -1*action.x, -1*action.y );
+				sPrime = checkLoc( sPrime );
+				int reward = 0;
+				int newDistance = calcDistance( sPrime );
+				if( newDistance == 0 ) {
+					reward = 10;
+				}
+				Point actionPrime = getActionGreedy( sPrime );
+				Map<Point, Double> currentStateQvals = Qvalues.get( s );
+				double currentQval = currentStateQvals.get( action );
+				Map<Point, Double> newStateQvals = Qvalues.get( sPrime );
+				double newQval = newStateQvals.get( actionPrime );
+				double updatedValue = currentStateQvals.get( action ) + 
+						learningRate * ( reward + discountFactor * newQval - currentQval );
+				currentStateQvals.put( s, updatedValue );
+				if(  ) {
+					
+				}
+			}
+			
+		}
+	}
+	
 }
