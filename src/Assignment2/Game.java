@@ -316,6 +316,11 @@ public class Game {
 	
 	
 	public void Sarsa() {
+
+	}
+	
+	public void test(int bla){
+
 		
 	}
 }
