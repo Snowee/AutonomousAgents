@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
+Miriam branch
 public class Game {
 	// Class variables for game
 	private Predator pred;
