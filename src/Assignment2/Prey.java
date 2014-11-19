@@ -8,6 +8,8 @@ public class Prey {
 	public Point pos;
 	// Initialize moves and their probability
 	String[] possibleMoves = {"WAIT","NORTH","EAST","SOUTH","WEST"};
+	Point[] possibleMovesPoint = 
+		{new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)};
 	double[] probRange = {0.8, 0.85, 0.9, 0.95, 1};
 		
 	public Prey () {
@@ -87,6 +89,60 @@ public class Prey {
 		}
 		return predLocation;
 	}
+	
+	public Point getMove( Point predNear ) {
+		Point move = new Point();
+		double chance = Math.random();
+		// if the predator is not in adjacent location
+		if ( predNear.equals( new Point(-2,-2) ) ) {
+			for( int i = 0; i < probRange.length; i++ ) {
+				if( chance <= probRange[i] ) {
+					move = possibleMovesPoint[i];
+					break;
+				}
+			}
+		} else {
+			// if predator is in adjacent location
+			// remove that location from the possibilities and give the
+			// remaining three directions 1/3 of 0.2 of happening
+			List<Point> remainingMoves = 
+					new ArrayList<Point>( Arrays.asList( possibleMovesPoint ) );
+			List<Double> remainingMoveProbs = Arrays.asList(0.8, 
+					0.2 + 1 * ( 0.20 / 3 ), 0.2 + 2 * ( 0.20 / 3 ), 
+					0.2 + 3 * ( 0.20 / 3 ) );
+			remainingMoves.remove( predNear );
+			for( int i = 0; i < remainingMoves.size(); i++ ) {
+				if( chance < remainingMoveProbs.get(i) ) {
+					move = remainingMoves.get(i);
+					break;
+				}
+			}
+		}
+		return move;
+		
+	}
+	
+	public Point predNear( Point state ) {
+		if( Math.abs(state.x) + Math.abs(state.y) == 1 ) {
+			Point point = new Point();
+			if( state.x == 1 ) {
+				point.setLocation(-1, 0);
+			} else
+				if( state.x == -1 ) {
+					point.setLocation(1, 0);
+				} else
+					if( state.y == 1) {
+						point.setLocation(0,-1);
+					} else 
+						if( state.y == -1 ) {
+							point.setLocation(0,1);
+						}
+			return point;
+		}
+		else 
+			return new Point(-2, -2);
+	}
+	
 	
 	// print the location of the prey
 	public void to_String() {
