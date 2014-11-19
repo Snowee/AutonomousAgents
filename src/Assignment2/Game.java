@@ -311,4 +311,11 @@ public class Game {
 		}
 		return bestAction;
 	}*/
+	
+	
+	
+	
+	public void test(int bla){
+		
+	}
 }
