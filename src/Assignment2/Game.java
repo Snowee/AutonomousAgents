@@ -209,22 +209,24 @@ public class Game {
 	    }
 		System.out.println();
 	}	
+	
+	public void qlearning( double discountFactor, double learningRate, double qIntValues, int nEpisodes ){
+		initQvalues( qIntValues );
 		
-	public void qlearning(double discountFactor, int nEpisodes){
-		initQvalues( 15.0 );
-		for( int i = 0; i < nEpisodes; i++){
-			Point s = initS();
-			boolean terminalState = false;
-			while(!terminalState){
-				Point action = getActionGreedy(s);
-				Point sPrime = (Point) s.clone();
-				sPrime.translate(-1*action.x, -1*action.y);
-				sPrime = checkLoc(sPrime);
-				// Observe reward and compute Q value
-				// s is sprime
+		for( int i = 0; i < nEpisodes; i++ ){
+			Point startState = initS();
+			
+			while( endState == false ){
+				
+				
+				
+				checkStatus();	
 			}
+			
 		}
 	}
+	
+	
 	
 	private Point getActionGreedy(Point state){
 		double epsilon = 0.1;
@@ -312,7 +314,7 @@ public class Game {
 		return bestAction;
 	}*/
 	
-	
+	/*
 	public void Sarsa(double discountFactor, double learningRate, int nEpisodes) {
 		initQvalues( 15.0 );
 		for( int i = 0; i < nEpisodes; i++ ) {
@@ -343,5 +345,24 @@ public class Game {
 			
 		}
 	}
+	*/
+	
+	/*
+	public void qlearning(double discountFactor, int nEpisodes){
+		initQvalues( 15.0 );
+		for( int i = 0; i < nEpisodes; i++){
+			Point s = initS();
+			boolean terminalState = false;
+			while(!terminalState){
+				Point action = getActionGreedy(s);
+				Point sPrime = (Point) s.clone();
+				sPrime.translate(-1*action.x, -1*action.y);
+				sPrime = checkLoc(sPrime);
+				// Observe reward and compute Q value
+				// s is sprime
+			}
+		}
+	}
+	*/
 	
 }
