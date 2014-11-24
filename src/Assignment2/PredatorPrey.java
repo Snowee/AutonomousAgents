@@ -6,15 +6,20 @@ public class PredatorPrey {
 
 	public static void main( String[] args ) {
 		double discountFactor = 0.8;
+		double learningRate = 0.1;
+		int nEpisodes = 100;
 		// boolean if the game is run
-		boolean playGame = true;
+		boolean playGame = false;
 		// Booleans determining which algorithms to run
-		boolean qlearning = true;
+		boolean qlearning = false;
+		boolean sarsa = true;
+		boolean useGreedy = false;
 
 		if( !playGame ) {
 			Predator pred = new Predator();
 			Prey prey = new Prey();
 			Game game = new Game( pred, prey );
+			game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy );
 			
 		}
 		else if( playGame ) {
