@@ -185,6 +185,42 @@ public class Game {
 		System.out.println();
 	}
 	
+	public void printBoardQActions( Map<Point, Map<Point, Double>> map, 
+			Point preyLoc ) {
+		String[][] board = new String[11][11];
+		for( Map.Entry<Point, Map<Point, Double>> entry : map.entrySet() ) {
+			Point state = entry.getKey();
+			Map<Point, Double> actions = map.get( state );
+			double max = 0;
+			int bestAct = 0;
+			int actionCount = 0;
+			for( int i = 0; i < entry.getValue().entrySet().size(); i++ ) {
+				double value = entry.getValue().get(move(pred.actions[i]));
+				if( value > max ) {
+					bestAct = actionCount;
+					max = value;
+				}
+				actionCount++;
+			}
+			Point newState = (Point) preyLoc.clone();
+			newState.x -= state.x;
+			newState.y -= state.y;
+			newState = checkLoc( newState );
+			if( newState.equals( preyLoc ) ) {
+				board[preyLoc.y][preyLoc.x] = "";
+				continue;
+			}
+			board[newState.y][newState.x] = pred.actions[bestAct];
+		}
+		for( String[] row : board ) {
+	        for( String r : row ) {
+	        	System.out.printf( "%s\t", r );
+	        }
+	        System.out.println();
+	    }
+		System.out.println();
+	}
+	
 	// Function to print the values for all states, based on reduced state space
 	public void printBoard( Map<Point, Double> map, Point preyLoc ) {
 		double[][] board = new double[11][11];
@@ -220,13 +256,12 @@ public class Game {
 			nextLoc.y -= state.y;
 			nextLoc = checkLoc( nextLoc );
 			int counter = 0;
-			for( Map.Entry<Point, Double> entry1 : value.entrySet() ) {
-				double value1 = entry1.getValue();
+			for( int i = 0; i < pred.actions.length; i++ ) {
+				double value1 = value.get(move(pred.actions[i]));
 				board[nextLoc.y][nextLoc.x][counter] = value1;
 				counter++;
 			}
-			
-			
+		
 		}
 		for( int r = 0; r < 11; r++ ) {
 			for( int i = 0; i < 5; i++ ) {
@@ -307,7 +342,7 @@ public class Game {
 		ArrayList<Double> softmaxProbs = softmaxProbabilities( state );
 		int softmaxMove = -1;
 		for( int i = 0; i < softmaxProbs.size(); i++ ) {
-			if( chance <= softmaxProbs.get(i) ) {
+			if( chance < softmaxProbs.get(i) ) {
 				softmaxMove = i;
 				break;
 			}
@@ -319,14 +354,16 @@ public class Game {
 	private ArrayList<Double> softmaxProbabilities( Point state ) {
 		ArrayList<Double> softmaxProbs = new ArrayList<Double>();
 		Map<Point, Double> valActFromState = Qvalues.get( state );
-		double temperature = 2;
+		double temperature = 10;
 		double sum = 0;
 		for( Point act : valActFromState.keySet() ) {
 			sum += Math.exp( valActFromState.get( act ) / temperature );
 		}
 		
-		for( Point act : valActFromState.keySet() ) {
-			double prob = Math.exp( valActFromState.get( act ) / temperature ) / sum;
+		//for( Point act : valActFromState.keySet() ) {
+		for( int i = 0; i < valActFromState.entrySet().size(); i++ ) {
+			double actVal = valActFromState.get(move(pred.actions[i]));
+			double prob = Math.exp( actVal / temperature ) / sum;
 			softmaxProbs.add( prob );
 		}
 		
@@ -459,6 +496,7 @@ public class Game {
 			
 		}
 		printBoardQ( Qvalues, new Point(5,5) );
+		printBoardQActions( Qvalues, new Point(5,5) );
 	}
 	
 	public boolean checkTerminalState( Point state ) {

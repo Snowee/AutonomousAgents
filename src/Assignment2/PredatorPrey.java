@@ -7,7 +7,7 @@ public class PredatorPrey {
 	public static void main( String[] args ) {
 		double discountFactor = 0.8;
 		double learningRate = 0.1;
-		int nEpisodes = 100;
+		int nEpisodes = 10000;
 		// boolean if the game is run
 		boolean playGame = false;
 		// Booleans determining which algorithms to run
