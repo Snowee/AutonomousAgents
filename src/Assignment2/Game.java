@@ -390,20 +390,20 @@ public class Game {
 	private void initQvalues( double qInitvals ) {
 		int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 		Map<Point, Double> actionVal = new HashMap<Point, Double>();
-		Map<Point, Double> terminalActionVal = new HashMap<Point, Double>();
+		Map<Point, Double> ActionValterm = new HashMap<Point, Double>();
 		for(int i = 0; i < pred.actions.length; i++){
 			actionVal.put(move(pred.actions[i]), qInitvals );
-			terminalActionVal.put(move(pred.actions[i]), 0.0);
+			ActionValterm.put(move(pred.actions[i]), 0.0);
 		}
 		for( int i = 0; i < 11; i++ ) {
 			for( int j = 0; j < 11; j++ ) {
 				Point directionVector = 
 						new Point( directionValues[i], directionValues[j] );
 				Map<Point, Double> actionQVal;
-				if( !directionVector.equals( new Point(0,0) ) ) {
-					actionQVal = new HashMap<Point, Double>(actionVal);
+				if( directionVector.equals( new Point(0,0) ) ) {
+					actionQVal = new HashMap<Point, Double>(ActionValterm);
 				} else {
-					actionQVal = new HashMap<Point, Double>(terminalActionVal);
+					actionQVal = new HashMap<Point, Double>(actionVal);
 				}
 				Qvalues.put( directionVector, actionQVal );
 			}
