@@ -12,15 +12,18 @@ public class PredatorPrey {
 		boolean playGame = false;
 		// Booleans determining which algorithms to run
 		boolean qlearning = false;
-		boolean sarsa = true;
-		boolean useGreedy = false;
+		boolean sarsa = false;
+		boolean useGreedy = true;
+		boolean offPolMC = true;
 
 		if( !playGame ) {
 			Predator pred = new Predator();
 			Prey prey = new Prey();
 			Game game = new Game( pred, prey );
-			game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy );
-			
+			if( sarsa )
+				game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy );
+			if( offPolMC )
+				game.offPolicyMonteCarlo( discountFactor, nEpisodes );
 		}
 		else if( playGame ) {
 			ArrayList<Integer> steps = new ArrayList<Integer>();
