@@ -73,10 +73,53 @@ public class Game {
 				state.x = prey.pos.x - pred.pos.x;
 				state.y = prey.pos.y - pred.pos.y;
 				state = pred.checkDirections( state );
-				predMove = bestPolicy.get( state );		
-				}
+				predMove = bestPolicy.get( state );
+			}
 			
 			Point moveCoordsPred = move( predMove );
+			pred.newPos( moveCoordsPred );
+			// nr of steps
+			counter += 1;
+			
+			//Uncomment below for print statement to see movement of predator
+			//printGameState( pred.pos, prey.pos );
+			
+			//check if end of game
+			checkStatus();
+		}
+		System.out.printf( "Game ended in %d steps\n", counter );
+		return counter;
+	}
+	
+	public int start1( boolean randomPolicy) {
+		int counter = 0;
+		printGameState( pred.pos, prey.pos );
+		while( endState == false ) {			
+			// Prey move
+			String predNear = prey.checkPred( pred );
+			String preyMove = prey.getMove( predNear );
+			Point moveCoordsPrey = move( preyMove );
+			prey.newPos( moveCoordsPrey );
+			// Uncomment below for print statement to see movement of prey
+			//printGameState(pred.pos, prey.pos);
+			
+			// Pred move
+			String predMove;
+			Point moveCoordsPred = new Point();
+			if( randomPolicy ) {
+				// random move
+				predMove = pred.getMove();
+			}
+			else {
+				Point state = new Point();
+				state.x = prey.pos.x - pred.pos.x;
+				state.y = prey.pos.y - pred.pos.y;
+				state = pred.checkDirections( state );
+				//predMove = bestPolicy.get( state );
+				moveCoordsPred = detPolicy.get(state); 
+			}
+			
+			//Point moveCoordsPred = move( predMove );
 			pred.newPos( moveCoordsPred );
 			// nr of steps
 			counter += 1;
@@ -915,7 +958,10 @@ public class Game {
 	}
 	
 	
-	public void offPolicyMonteCarlo( double discountFactor, int nEpisodes ) {
+	public List<double[]> offPolicyMonteCarlo( double discountFactor, int nEpisodes ) {
+		List<double[]> plotData = new ArrayList<double[]>();
+		double episodeIndex[] = new double[nEpisodes];
+		double stepCount[] = new double[nEpisodes];
 		initQvalues( -15.0 );
 		initNDvalues();
 		initDetPolicy();
@@ -936,11 +982,16 @@ public class Game {
 			}
 			
 			updateDetPolicy();
+			episodeIndex[k] = k;
+			int steps = start1( false );
+			stepCount[k] = steps;
 			//printBoardQ( Qvalues, new Point(5,5) );
 		}
+		plotData.add(episodeIndex);
+		plotData.add(stepCount);
 		printDetPolicy( detPolicy, new Point(5,5) );
 
-		
+		return plotData;
 	}
 	
 	
