@@ -15,13 +15,15 @@ public class PredatorPrey {
 		boolean sarsa = false;
 		boolean useGreedy = true;
 		boolean offPolMC = true;
+		double epsilon = 0.1;
+		double temperature = 1;
 
 		if( !playGame ) {
 			Predator pred = new Predator();
 			Prey prey = new Prey();
 			Game game = new Game( pred, prey );
 			if( sarsa )
-				game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy );
+				game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy, epsilon, temperature );
 			if( offPolMC )
 				game.offPolicyMonteCarlo( discountFactor, nEpisodes );
 		}

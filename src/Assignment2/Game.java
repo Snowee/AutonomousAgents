@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +26,12 @@ public class Game {
 	public Map<Point, Point> detPolicy;
 	public Map<Point, String> bestPolicy;
 	private Point[] statesArray;
+	private List<Double> rewardList = new ArrayList<Double>();
+	private Map<List<Point>, Boolean> appearanceList = 
+			new HashMap<List<Point>, Boolean>();
+	private Map<Point, Point> appearanceListS = 
+			new HashMap<Point, Point>();
 	Map<Point, Integer> stateCounts;
-
 	
 	// Constructor for a game object
 	public Game( Predator pred, Prey prey ) {
@@ -73,8 +78,8 @@ public class Game {
 				state.x = prey.pos.x - pred.pos.x;
 				state.y = prey.pos.y - pred.pos.y;
 				state = pred.checkDirections( state );
-				predMove = bestPolicy.get( state );
-			}
+				predMove = bestPolicy.get( state );		
+				}
 			
 			Point moveCoordsPred = move( predMove );
 			pred.newPos( moveCoordsPred );
@@ -204,6 +209,7 @@ public class Game {
 		return loc;
 	}
 	
+	/*
 	// Function for reduced initialization of arbitrary function
 	// ( all states, "west" )
 	public Map<Point, String> reductionInitPolicy() {
@@ -216,7 +222,7 @@ public class Game {
 			}
 		}
 		return initialPolicy;
-	}
+	}*/
 	
 	// Function to print a board with actions on its coordinates
 	public void printBoardActions( Map<Point, String> map, 
@@ -274,14 +280,12 @@ public class Game {
 			nextLoc.x -= state.x;
 			nextLoc.y -= state.y;
 			nextLoc = checkLoc( nextLoc );
-			//if(!nextLoc.equals(preyLoc)){
 			double max = 0;
 			for(int i = 0; i < pred.actions.length; i++){
 				if(value.get(move(pred.actions[i])) > max ){
 					max = value.get(move(pred.actions[i]));
 				}
 			}
-			//}
 			board[nextLoc.y][nextLoc.x] = max;
 		}
 		for( double[] row : board ) {
@@ -333,7 +337,6 @@ public class Game {
 			nextLoc.y -= state.y;
 			nextLoc = checkLoc( nextLoc );
 			int counter = 0;
-
 			for(int i = 0; i < pred.actions.length; i++){
 				double value1 = value.get(move(pred.actions[i]));
 				board[nextLoc.y][nextLoc.x][counter] = value1;
@@ -356,399 +359,115 @@ public class Game {
 			System.out.println();
 		}
 	}
-
-
-		
-	public void qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy){
-		initQvalues(15.0);
-		Point terminalState = new Point(0,0);
-		for( int i = 1; i <= nEpisodes; i++){
-			Point s = initS();
-			boolean inTerminalState = false;
-			int stepCounter = 0;
-			while(!inTerminalState){
-				stepCounter = stepCounter + 1;
-				Point action;
-				if(greedy){
-					action = getActionGreedy(s);
-				}
-				else{
-					action = getActionSoftmax(s);
-				}
-				Point sTemp = (Point) s.clone();
-				sTemp.translate(-1*action.x, -1*action.y);
-				sTemp = pred.checkDirections(sTemp);
-				Point sPrime = new Point(0,0);
-				
-				// Observe reward
-				int reward = 0;
-				// If predator move resulted in terminal state,
-				// observe reward of 10, update Qvalue and end the episode
-				if(sTemp.equals(terminalState)){
-					reward = 10;
-					inTerminalState = true;
-					sPrime = sTemp;
-				}
-				else{
-					sPrime = interactWithEnv(sTemp);
-				}
-				
-				// Compute Q value for current state s
-				double qval = computeQvalueQL(s, action, alpha, 
-						discountFactor, sPrime, reward);
-				Qvalues.get(s).put(action, qval);
-				
-				// s is sPrime
-				s = sPrime;
+	
+	public List<double[]> onPolicyMC(double epsilon, double discountFactor, int nEpisodes){
+		initQvalues(-1);
+		Map<Point, Map<Point, ReturnsSaver>> returnsList = initReturnsList();
+		Map<Point, Map<Point, Double>> policy = initEpsilonSoftPolicy();
+		double[] steps = new double[nEpisodes+1];
+		double[] xData = new double[nEpisodes+1];
+		List<double[]> data = new ArrayList<double[]>();
+		for(int i = 0; i < nEpisodes; i++){
+			// Generate episode 
+			List<List<Point>> episode = generateEpisodeOnPol(policy);
+			List<Double> rewards = rewardList;
+			
+			/*
+			 * For each pair s,a appearing in the episode:
+			 * - compute return following the first occurrence of s,a
+			 * - append return to Returns(s,a)
+			 * - Q(s,a) <-- average(Returns(s,a))
+			 */
+			for( List<Point> stateAct : appearanceList.keySet()){
+				Point state = stateAct.get(0);
+				Point action = stateAct.get(1);
+				int t = episode.indexOf(stateAct);
+				double ret = computeReturnFromT(rewards, t, discountFactor);
+				returnsList.get(state).get(action).addReturn(ret);
+				double averageRet = returnsList.get(state).get(action).getAverageReturn();
+				Qvalues.get(state).put(action, averageRet);
 			}
-			//System.out.println("End of episode: "+i);
-			System.out.printf("Episode ended in %d steps\n", stepCounter);
+			
+			/*
+			 * For each s in the episode
+			 */
+			for(Point s : appearanceListS.keySet()){
+				Point greedyAction = getArgmaxActionQval(s);
+		
+				// For every action
+				double nActions = policy.get(s).size();
+				for(Point a : policy.get(s).keySet()){
+					double newProb;
+					if(a.equals(greedyAction)){
+						newProb = 1 - epsilon + (epsilon/nActions);
+					} else{
+						newProb = epsilon/nActions;
+					}
+					policy.get(s).put(a, newProb);
+				}
+			}
+			steps[i] = episode.size();
+			xData[i] = i;
 		}
 		printBoardQ(Qvalues, new Point(5,5));
 		printboardQActions(Qvalues, new Point(5,5));
 		printboardQmax(Qvalues, new Point(5,5));
+		data.add(steps);
+		data.add(xData);
+		return data;
 	}
 	
-	// Compute Q-value in Qlearning for state s
-	private double computeQvalueQL(Point s, Point action, double alpha, 
-			double discountFactor, Point sPrime, int reward){
-		double oldqval = Qvalues.get(s).get(action);
-		Set<Point> sPrimeActions = Qvalues.get(sPrime).keySet();
-		double maxPrimeQval = 0;
-		for(Point actionPrime : sPrimeActions){
-			if(Qvalues.get(sPrime).get(actionPrime) >= maxPrimeQval){
-				maxPrimeQval = Qvalues.get(sPrime).get(actionPrime);
+	private Point getArgmaxActionQval(Point s){
+		Map<Point, Double> actVals = Qvalues.get(s);
+		double maxVal = 0;
+		int bestActionInd = -1;
+		for(int i = 0; i < pred.actions.length; i++){
+			double val = actVals.get(move(pred.actions[i]));
+			if( val >= maxVal ){
+				maxVal = val;
+				bestActionInd = i;
 			}
 		}
-		double qval = oldqval + alpha*(reward + 
-				(discountFactor*maxPrimeQval) - oldqval);
-		
-		return qval;
-	}
-	
-	// Retrieve next state when interacting with environment
-	// (Prey does a move)
-	private Point interactWithEnv(Point sTemp){
-		Point sPrime;
-		Point predNear = prey.predNear(sTemp);
-		Point actionPrey = prey.getMove(predNear);
-		sTemp.translate(actionPrey.x, actionPrey.y);
-		sPrime = pred.checkDirections(sTemp);
-		
-		return sPrime;
-	}
-	
-	// Get epsilon-greedy action for predator
-	private Point getActionGreedy(Point state){
-		double epsilon = 0.1;
-		Random rand = new Random();
-		double chance = rand.nextDouble();
-		Point action = new Point();
-
-		// Select random action with probability epsilon
-		if(chance < epsilon){
-			//System.out.println("Random action");
-			action = move(pred.actions[rand.nextInt(pred.actions.length)]);
-		}
-		// Select optimal action
-		else{
-			double maxVal = 0;
-			Map<Point, Double> valActFromState = Qvalues.get(state);
-			for(Map.Entry<Point, Double> entry : valActFromState.entrySet()){
-				if(entry.getValue() >= maxVal){
-					action = entry.getKey();
-					maxVal = entry.getValue();
-				}
-			}
-		}
-		
-		return action;
-	}
-		
-	private Point getActionSoftmax( Point state ) {
-		Random rand = new Random();
-		double chance = rand.nextDouble();
-		ArrayList<Double> softmaxProbs = softmaxProbabilities( state );
-		int softmaxMove = -1;
-		for( int i = 0; i < softmaxProbs.size(); i++ ) {
-			if( chance < softmaxProbs.get(i) ) {
-				softmaxMove = i;
-				break;
-			}
-		}
-		Point move = move( pred.actions[softmaxMove] );
-		return move;
-	}
-	
-	private ArrayList<Double> softmaxProbabilities( Point state ) {
-		ArrayList<Double> softmaxProbs = new ArrayList<Double>();
-		Map<Point, Double> valActFromState = Qvalues.get( state );
-		double temperature = 10;
-		double sum = 0;
-		for( Point act : valActFromState.keySet() ) {
-			sum += Math.exp( valActFromState.get( act ) / temperature );
-		}
-		
-		//for( Point act : valActFromState.keySet() ) {
-		for( int i = 0; i < valActFromState.entrySet().size(); i++ ) {
-			double actVal = valActFromState.get(move(pred.actions[i]));
-			double prob = Math.exp( actVal / temperature ) / sum;
-			softmaxProbs.add( prob );
-		}
-		
-		for( int i = 1; i < softmaxProbs.size(); i++ ) {
-			softmaxProbs.set( i, softmaxProbs.get(i-1) + softmaxProbs.get(i) );
-		}
-		return softmaxProbs;		
-	}
-	
-	private Point initS(){
-		Point initialState = new Point();
-		boolean nonTerminalInit = false;
-		while( !nonTerminalInit ) {
-			Random rand = new Random();
-			initialState = statesArray[rand.nextInt(statesArray.length)];
-			if( !initialState.equals(new Point(0,0) )) {
-				nonTerminalInit = true;
-			}
-		}
-		return initialState;
-	}
-	
-	private void initQvalues(double initialQvalues) {
-		int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
-		Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
-		// Random initial Q values
-		if(initialQvalues < 0.0){
-			Random rand = new Random();
-			for( int i = 0; i < 11; i++ ) {
-				for( int j = 0; j < 11; j++ ) {
-					Point directionVector = 
-							new Point( directionValues[i], directionValues[j] );
-					Map<Point, Double> actionQVal;
-					if( directionVector.equals( new Point(0,0) ) ) {
-						for(int k = 0; k < pred.actions.length; k++){
-							actionValterm.put(move(pred.actions[k]), 0.0);
-						}
-						actionQVal = new HashMap<Point, Double>(actionValterm);
-					} else {
-						Map<Point, Double> actionVal = new HashMap<Point, Double>();
-						for(int k = 0; k < pred.actions.length; k++){
-							actionVal.put(move(pred.actions[k]), (double) rand.nextInt(11));
-						}
-						actionQVal = new HashMap<Point, Double>(actionVal);
-					}
-					Qvalues.put( directionVector, actionQVal );
-				}
-			}
-		} else{
-			Map<Point, Double> actionVal = new HashMap<Point, Double>();
-			for(int i = 0; i < pred.actions.length; i++){
-				actionValterm.put(move(pred.actions[i]), 0.0);
-				actionVal.put(move(pred.actions[i]), initialQvalues);
-			}
-			for( int i = 0; i < 11; i++ ) {
-				for( int j = 0; j < 11; j++ ) {
-					Point directionVector = 
-							new Point( directionValues[i], directionValues[j] );
-					Map<Point, Double> actionQVal;
-					if( directionVector.equals( new Point(0,0) ) ) {
-						actionQVal = new HashMap<Point, Double>(actionValterm);
-					} else {
-						actionQVal = new HashMap<Point, Double>(actionVal);
-					}
-					Qvalues.put( directionVector, actionQVal );
-				}
-			}
-		}
-		Set<Point> states = Qvalues.keySet();
-		statesArray = states.toArray( new Point[states.size()] );
-	}
-	
-//	// Initialize reduced state space
-//	private void initQvalues(double initialQvalues) {
-//		int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
-//		Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
-//		Map<Point, Double> actionVal = new HashMap<Point, Double>();
-//		for(int i = 0; i < pred.actions.length; i++){
-//			actionValterm.put(move(pred.actions[i]), 0.0);
-//			actionVal.put(move(pred.actions[i]), initialQvalues);
-//		}
-//		for( int i = 0; i < 11; i++ ) {
-//			for( int j = 0; j < 11; j++ ) {
-//				Point directionVector = 
-//						new Point( directionValues[i], directionValues[j] );
-//				Map<Point, Double> actionQVal;
-//				if( directionVector.equals( new Point(0,0) ) ) {
-//					actionQVal = new HashMap<Point, Double>(actionValterm);
-//				} else {
-//					actionQVal = new HashMap<Point, Double>(actionVal);
-//				}
-//				Qvalues.put( directionVector, actionQVal );
-//			}
-//		}
-//		Set<Point> states = Qvalues.keySet();
-//		statesArray = states.toArray( new Point[states.size()] );
-//	}
-	/*	
-	// Function to find the best actions for all states ( reduced state space )
-	public Map<Point, String> findBestPolicy( double discountFactor,
-			Map<Point, Double> finalValueMap ) {
-		for( Point key : stateSpace.keySet() ) {
-			String bestAction = findBestAction( discountFactor, key );
-			bestPolicy.put( key, bestAction );
-		}
-		return bestPolicy;
-	}
-	*/
-	/*
-	// Function to find the best action given a certain state
-	public String findBestAction( double discountFactor, Point state ) {
-		double value = 0;
-		String bestAction = "";
-		ArrayList<Point> posNextDir = pred.nextPosDirections.get( state );
-		int distance = calcDistance( state );
-		if( distance != 0 ) {
-			for( int i = 0; i < posNextDir.size(); i++ ) {
-				double reward = 0;
-				Point nextPos = posNextDir.get(i);
-				int nextDist = calcDistance( nextPos );
-				if( nextDist == 0 ) {
-					reward = 10;
-				}
-				double valueA = reward + discountFactor * 
-						stateSpace.get( nextPos );
-				if( valueA >= value ) {
-					value = valueA;
-					bestAction = pred.actions[i];
-				}
-			}	
-		}
+		Point bestAction = move(pred.actions[bestActionInd]);
 		return bestAction;
-	}*/
+	}
 	
-	
-	public void Sarsa( double discountFactor, double learningRate, int nEpisodes,
-			boolean useGreedy ) {
-		initQvalues( 15.0 );
-		for( int i = 0; i < nEpisodes; i++ ) {
-			Point s = initS();
-			Point action;
-			if( useGreedy )
-				action = getActionGreedy( s );
-			else
-				action = getActionSoftmax( s );
-			boolean terminalState = false;
-			int nrOfSteps = 0;
-			while( !terminalState ) {
-				Point sPrime = (Point) s.clone();
-				sPrime.translate( -1*action.x, -1*action.y );
-				sPrime = pred.checkDirections( sPrime );
-				nrOfSteps++;
-				
-				int reward = 0;
-				if( sPrime.equals( new Point(0,0) ) ) {
-					reward = 10;
-					terminalState = true;
-				} else {
-					sPrime = doPreyMove( sPrime );
-					sPrime = pred.checkDirections( sPrime );
-				}
-				Point actionPrime;
-				if( useGreedy )
-					actionPrime = getActionGreedy( sPrime );
-				else
-					actionPrime = getActionSoftmax( sPrime );
-				Map<Point, Double> currentStateQvals = Qvalues.get( s );
-				double currentQval = currentStateQvals.get( action );
-				Map<Point, Double> newStateQvals = Qvalues.get( sPrime );
-				double newQval = newStateQvals.get( actionPrime );
-				double updatedValue = currentQval + 
-						learningRate * ( reward + discountFactor * newQval - currentQval );
-				currentStateQvals.put( action, updatedValue );
-				Qvalues.put(s, currentStateQvals);
-				s = (Point) sPrime.clone();
-				action = (Point) actionPrime.clone();
-				//printBoardQ( Qvalues, s );
-			}
-			System.out.println( nrOfSteps );
+	private List<List<Point>> generateEpisodeOnPol(Map<Point, Map<Point, Double>> policy){
+		appearanceList.clear();
+		appearanceListS.clear();
+		rewardList.clear();
+		Point terminalState = new Point(0,0);
+		List<List<Point>> episode = new ArrayList<List<Point>>();
+		Point s = initS();
+		boolean inTerminalState = false;
+		while(!inTerminalState){
+			Point action = getActionSoftPol(policy, s);
+			episode.add(new ArrayList<Point>(Arrays.asList(s, action)));
+			appearanceList.put(new ArrayList<Point>(Arrays.asList(s, action)), true);
+			appearanceListS.put(s, action);
+			Point sTemp = (Point) s.clone();
+			sTemp.translate(-1*action.x, -1*action.y);
+			sTemp = pred.checkDirections(sTemp);
+			Point sPrime = new Point(0,0);
 			
-		}
-		printBoardQ( Qvalues, new Point(5,5) );
-		printboardQmax( Qvalues, new Point(5,5));
-		printboardQActions( Qvalues, new Point(5,5) );
-	}
-	
-	public boolean checkTerminalState( Point state ) {
-		if ( calcDistance( state ) == 0 ) {
-			return true;
-		}
-		return false;
-	}
-	
-	public Point doPreyMove( Point state ) {
-		Point predNear = prey.predNear( state );
-		Point preyMove = prey.getMove( predNear );
-		Point returnState = (Point) state.clone();
-		returnState.translate(preyMove.x, preyMove.y);
-		return returnState;
-	}
-	
-	
-	private Map<Point, Map<Point, Double>> initEpsilonSoftPolicy(){
-		Map<Point, Map<Point, Double>> eSoftPol = new HashMap<Point, Map<Point, Double>>();
-		for(Entry<Point, Map<Point, Double>> stateActVal : Qvalues.entrySet()){
-			double[] probs = getNormalizedProbDist(stateActVal.getValue().size());
-			int counter = 0;
-			Map<Point, Double> actVal = new HashMap<Point, Double>();
-			for(Point act : stateActVal.getValue().keySet() ){
-				actVal.put(act, probs[counter]);
-				counter++;
+			// Observe reward
+			int reward = 0;
+			// If predator move resulted in terminal state,
+			// observe reward of 10 and end episode
+			if(sTemp.equals(terminalState)){
+				reward = 10;
+				inTerminalState = true;
+				sPrime = sTemp;
+			} else{
+				sPrime = interactWithEnv(sTemp);
 			}
-			eSoftPol.put(stateActVal.getKey(), actVal);
+			rewardList.add((double) reward);
+			s = sPrime;
 		}
-		
-		return eSoftPol;
+		return episode;
 	}
 	
-	private double[] getNormalizedProbDist(int n){
-		Random rand = new Random();
-		double[] probDist = new double[n];
-		double sum = 0;
-		for(int i = 0; i < n; i++){
-			probDist[i] = rand.nextDouble();
-			sum = sum + probDist[i];
-		}
-		for(int i = 0; i < n; i++){
-			probDist[i] = probDist[i]/sum;
-		}
-		
-		return probDist;
-	}
-	
-	private Point getActionSoftPol(Map<Point, Map<Point, Double>> policy, Point s){
-		Random rand = new Random();
-		double chance = rand.nextDouble();
-		Map<Point, Double> actionProbs = policy.get(s);
-		List<Double> probs = new ArrayList<Double>();
-		
-		probs.add(actionProbs.get(move(pred.actions[0])));
-		for( int i = 1; i < pred.actions.length; i++ ) {
-			probs.add(probs.get(i-1) + actionProbs.get(move(pred.actions[i])));
-		}
-		int actionInd = -1;
-		for(int i = 0; i < probs.size(); i++){
-			if( chance < probs.get(i) ){
-				actionInd = i;
-				break;
-			}
-		}
-		Point action = move(pred.actions[actionInd]);
-
-		return action;
-	}
-	
-	public ArrayList<ArrayList<Point>> generateEpisode( Map<Point, Map<Point, Double>> eSoftPol ) {
+	public ArrayList<ArrayList<Point>> generateEpisodeOffPol( Map<Point, Map<Point, Double>> eSoftPol ) {
 		ArrayList<ArrayList<Point>> episode = new ArrayList<ArrayList<Point>>(); 
 		pred = new Predator();
 		prey = new Prey();
@@ -787,6 +506,29 @@ public class Game {
 			state = (Point) newState.clone();
 		}
 		return episode;
+	}
+	
+	private double computeReturnFromT(List<Double> rewards, int t, double discountFactor){
+		double returnFromT = 0;
+		int count = 0;
+		for(int i = t; i < rewards.size(); i++){
+			returnFromT = returnFromT + (Math.pow(discountFactor, count)*rewards.get(i));
+			count++;
+		}
+		
+		return returnFromT;
+	}
+	
+	private int getReturn( ArrayList<ArrayList<Point>> episode, int firstT, 
+			double discountFactor ) {
+		int returnT = 0;
+		int count = 0;
+		for( int i = firstT; i < episode.size(); i++ ) {
+			ArrayList<Point> timeStep = episode.get(i);
+			returnT += Math.pow(discountFactor, count) * timeStep.get(2).x;
+			count++;
+		}
+		return returnT;
 	}
 	
 	private void initNDvalues( ) {
@@ -830,18 +572,343 @@ public class Game {
 		return w;
 	}
 	
-	private int getReturn( ArrayList<ArrayList<Point>> episode, int firstT, 
-			double discountFactor ) {
-		int returnT = 0;
-		int count = 0;
-		for( int i = firstT; i < episode.size(); i++ ) {
-			ArrayList<Point> timeStep = episode.get(i);
-			returnT += Math.pow(discountFactor, count) * timeStep.get(2).x;
-			count++;
+	private Point getActionSoftPol(Map<Point, Map<Point, Double>> policy, Point s){
+		Random rand = new Random();
+		double chance = rand.nextDouble();
+		Map<Point, Double> actionProbs = policy.get(s);
+		List<Double> probs = new ArrayList<Double>();
+		
+		probs.add(actionProbs.get(move(pred.actions[0])));
+		for( int i = 1; i < pred.actions.length; i++ ) {
+			probs.add(probs.get(i-1) + actionProbs.get(move(pred.actions[i])));
 		}
-		return returnT;
+		int actionInd = -1;
+		for(int i = 0; i < probs.size(); i++){
+			if( chance < probs.get(i) ){
+				actionInd = i;
+				break;
+			}
+		}
+		Point action = move(pred.actions[actionInd]);
+
+		return action;
 	}
 	
+	private Map<Point, Map<Point, ReturnsSaver>> initReturnsList(){
+		Map<Point, Map<Point, ReturnsSaver>> returnsList = 
+				new HashMap<Point, Map<Point, ReturnsSaver>>();
+		for(Point state : Qvalues.keySet()){
+			Map<Point, ReturnsSaver> retMap = new HashMap<Point, ReturnsSaver>();
+			for( Point action: Qvalues.get(state).keySet()){
+				retMap.put(action, new ReturnsSaver());
+			}
+			returnsList.put(state, retMap);
+		}
+		
+		return returnsList;
+	}
+	
+	private Map<Point, Map<Point, Double>> initEpsilonSoftPolicy(){
+		Map<Point, Map<Point, Double>> eSoftPol = new HashMap<Point, Map<Point, Double>>();
+		for(Entry<Point, Map<Point, Double>> stateActVal : Qvalues.entrySet()){
+			double[] probs = getNormalizedProbDist(stateActVal.getValue().size());
+			int counter = 0;
+			Map<Point, Double> actVal = new HashMap<Point, Double>();
+			for(Point act : stateActVal.getValue().keySet() ){
+				actVal.put(act, probs[counter]);
+				counter++;
+			}
+			eSoftPol.put(stateActVal.getKey(), actVal);
+		}
+		
+		return eSoftPol;
+	}
+	
+	private double[] getNormalizedProbDist(int n){
+		Random rand = new Random();
+		double[] probDist = new double[n];
+		double sum = 0;
+		for(int i = 0; i < n; i++){
+			probDist[i] = rand.nextDouble();
+			sum = sum + probDist[i];
+		}
+		for(int i = 0; i < n; i++){
+			probDist[i] = probDist[i]/sum;
+		}
+		
+		return probDist;
+	}
+		
+	public List<double[]> qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
+			double initQval, double epsilon, double temperature){
+		initQvalues(initQval);
+		Point terminalState = new Point(0,0);
+		double[] steps = new double[nEpisodes+1];
+		double[] xData = new double[nEpisodes+1];
+		for( int i = 0; i < nEpisodes; i++){
+			Point s = initS();
+			boolean inTerminalState = false;
+			int stepCounter = 0;
+			while(!inTerminalState){
+				stepCounter = stepCounter + 1;
+				Point action;
+				if(greedy){
+					action = getActionGreedy(epsilon, s);
+				}
+				else{
+					action = getActionSoftmax(temperature, s);
+				}
+				Point sTemp = (Point) s.clone();
+				sTemp.translate(-1*action.x, -1*action.y);
+				sTemp = pred.checkDirections(sTemp);
+				Point sPrime = new Point(0,0);
+				
+				// Observe reward
+				int reward = 0;
+				// If predator move resulted in terminal state,
+				// observe reward of 10, update Qvalue and end the episode
+				if(sTemp.equals(terminalState)){
+					reward = 10;
+					inTerminalState = true;
+					sPrime = sTemp;
+				}
+				else{
+					sPrime = interactWithEnv(sTemp);
+				}
+				
+				// Compute Q value for current state s
+				double qval = computeQvalueQL(s, action, alpha, 
+						discountFactor, sPrime, reward);
+				Qvalues.get(s).put(action, qval);
+				
+				// s is sPrime
+				s = sPrime;
+			}
+			steps[i] = stepCounter;
+			xData[i] = i;
+		}
+		printBoardQ(Qvalues, new Point(5,5));
+		printboardQActions(Qvalues, new Point(5,5));
+		printboardQmax(Qvalues, new Point(5,5));
+		List<double[]> plotData = new ArrayList<double[]>();
+		plotData.add(steps);
+		plotData.add(xData);
+		
+		return plotData;
+	}
+	
+	// Compute Q-value in Qlearning for state s
+	private double computeQvalueQL(Point s, Point action, double alpha, 
+			double discountFactor, Point sPrime, int reward){
+		double oldqval = Qvalues.get(s).get(action);
+		Set<Point> sPrimeActions = Qvalues.get(sPrime).keySet();
+		double maxPrimeQval = 0;
+		for(Point actionPrime : sPrimeActions){
+			if(Qvalues.get(sPrime).get(actionPrime) >= maxPrimeQval){
+				maxPrimeQval = Qvalues.get(sPrime).get(actionPrime);
+			}
+		}
+		double qval = oldqval + alpha*(reward + 
+				(discountFactor*maxPrimeQval) - oldqval);
+		
+		return qval;
+	}
+	
+	// Retrieve next state when interacting with environment
+	// (Prey does a move)
+	private Point interactWithEnv(Point sTemp){
+		Point sPrime;
+		Point predNear = prey.predNear(sTemp);
+		Point actionPrey = prey.getMove(predNear);
+		sTemp.translate(actionPrey.x, actionPrey.y);
+		sPrime = pred.checkDirections(sTemp);
+		
+		return sPrime;
+	}
+	
+	// Get epsilon-greedy action for predator
+	private Point getActionGreedy(double epsilon, Point state){
+		Random rand = new Random();
+		double chance = rand.nextDouble();
+		Point action = new Point();
+
+		// Select random action with probability epsilon
+		if(chance < epsilon){
+			//System.out.println("Random action");
+			action = move(pred.actions[rand.nextInt(pred.actions.length)]);
+		}
+		// Select optimal action
+		else{
+			double maxVal = 0;
+			Map<Point, Double> valActFromState = Qvalues.get(state);
+			for(Map.Entry<Point, Double> entry : valActFromState.entrySet()){
+				if(entry.getValue() >= maxVal){
+					action = entry.getKey();
+					maxVal = entry.getValue();
+				}
+			}
+		}
+		
+		return action;
+	}
+		
+	private Point getActionSoftmax(double temperature,  Point state ) {
+		Random rand = new Random();
+		double chance = rand.nextDouble();
+		ArrayList<Double> softmaxProbs = softmaxProbabilities( temperature, state );
+		int softmaxMove = -1;
+		for( int i = 0; i < softmaxProbs.size(); i++ ) {
+			if( chance < softmaxProbs.get(i) ) {
+				softmaxMove = i;
+				break;
+			}
+		}
+		Point move = move( pred.actions[softmaxMove] );
+		return move;
+	}
+	
+	private ArrayList<Double> softmaxProbabilities( double temperature, Point state ) {
+		ArrayList<Double> softmaxProbs = new ArrayList<Double>();
+		Map<Point, Double> valActFromState = Qvalues.get( state );
+		double sum = 0;
+		for( Point act : valActFromState.keySet() ) {
+			sum += Math.exp( valActFromState.get( act ) / temperature );
+		}
+		
+		for( int i = 0; i < valActFromState.entrySet().size(); i++ ) {
+			double actVal = valActFromState.get(move(pred.actions[i]));
+			double prob = Math.exp( actVal / temperature ) / sum;
+			softmaxProbs.add( prob );
+		}
+		
+		for( int i = 1; i < softmaxProbs.size(); i++ ) {
+			softmaxProbs.set( i, softmaxProbs.get(i-1) + softmaxProbs.get(i) );
+		}
+		return softmaxProbs;		
+	}
+	
+	private Point initS(){
+		Point initialState = new Point();
+		boolean nonTerminalInit = false;
+		while( !nonTerminalInit ) {
+			Random rand = new Random();
+			initialState = statesArray[rand.nextInt(statesArray.length)];
+			if( !initialState.equals(new Point(0,0) )) {
+				nonTerminalInit = true;
+			}
+		}
+		return initialState;
+	}
+	
+	// Initialize reduced state space
+	private void initQvalues(double initialQvalues) {
+		int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
+		Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
+		// Random initial Q values
+		if(initialQvalues < 0.0){
+			Random rand = new Random();
+			for( int i = 0; i < 11; i++ ) {
+				for( int j = 0; j < 11; j++ ) {
+					Point directionVector = 
+							new Point( directionValues[i], directionValues[j] );
+					Map<Point, Double> actionQVal;
+					if( directionVector.equals( new Point(0,0) ) ) {
+						for(int k = 0; k < pred.actions.length; k++){
+							actionValterm.put(move(pred.actions[k]), 0.0);
+						}
+						actionQVal = new HashMap<Point, Double>(actionValterm);
+					} else {
+						Map<Point, Double> actionVal = new HashMap<Point, Double>();
+						for(int k = 0; k < pred.actions.length; k++){
+							actionVal.put(move(pred.actions[k]), (double) rand.nextInt(21));
+						}
+						actionQVal = new HashMap<Point, Double>(actionVal);
+					}
+					Qvalues.put( directionVector, actionQVal );
+				}
+			}
+		} else{
+			Map<Point, Double> actionVal = new HashMap<Point, Double>();
+			for(int i = 0; i < pred.actions.length; i++){
+				actionValterm.put(move(pred.actions[i]), 0.0);
+				actionVal.put(move(pred.actions[i]), initialQvalues);
+			}
+			for( int i = 0; i < 11; i++ ) {
+				for( int j = 0; j < 11; j++ ) {
+					Point directionVector = 
+							new Point( directionValues[i], directionValues[j] );
+					Map<Point, Double> actionQVal;
+					if( directionVector.equals( new Point(0,0) ) ) {
+						actionQVal = new HashMap<Point, Double>(actionValterm);
+					} else {
+						actionQVal = new HashMap<Point, Double>(actionVal);
+					}
+					Qvalues.put( directionVector, actionQVal );
+				}
+			}
+		}
+		Set<Point> states = Qvalues.keySet();
+		statesArray = states.toArray( new Point[states.size()] );
+	}
+	
+	public void Sarsa( double discountFactor, double learningRate, int nEpisodes,
+			boolean useGreedy, double epsilon, double temperature ) {
+		initQvalues( 15.0 );
+		for( int i = 0; i < nEpisodes; i++ ) {
+			Point s = initS();
+			Point action;
+			if( useGreedy )
+				action = getActionGreedy( epsilon, s );
+			else
+				action = getActionSoftmax( temperature, s );
+			boolean terminalState = false;
+			int nrOfSteps = 0;
+			while( !terminalState ) {
+				Point sPrime = (Point) s.clone();
+				sPrime.translate( -1*action.x, -1*action.y );
+				sPrime = pred.checkDirections( sPrime );
+				nrOfSteps++;
+				
+				int reward = 0;
+				if( sPrime.equals( new Point(0,0) ) ) {
+					reward = 10;
+					terminalState = true;
+				} else {
+					sPrime = interactWithEnv( sPrime );
+					sPrime = pred.checkDirections( sPrime );
+				}
+				Point actionPrime;
+				if( useGreedy )
+					actionPrime = getActionGreedy( epsilon, sPrime );
+				else
+					actionPrime = getActionSoftmax( temperature, sPrime );
+				Map<Point, Double> currentStateQvals = Qvalues.get( s );
+				double currentQval = currentStateQvals.get( action );
+				Map<Point, Double> newStateQvals = Qvalues.get( sPrime );
+				double newQval = newStateQvals.get( actionPrime );
+				double updatedValue = currentQval + 
+						learningRate * ( reward + discountFactor * newQval - currentQval );
+				currentStateQvals.put( action, updatedValue );
+				Qvalues.put(s, currentStateQvals);
+				s = (Point) sPrime.clone();
+				action = (Point) actionPrime.clone();
+				//printBoardQ( Qvalues, s );
+			}
+			System.out.println( nrOfSteps );
+			
+		}
+		printBoardQ( Qvalues, new Point(5,5) );
+		printboardQmax( Qvalues, new Point(5,5));
+		printboardQActions( Qvalues, new Point(5,5) );
+	}
+	
+	public boolean checkTerminalState( Point state ) {
+		if ( calcDistance( state ) == 0 ) {
+			return true;
+		}
+		return false;
+	}
+
 	private void updateQMC( ArrayList<ArrayList<Point>> episode, int tau, 
 			Map<Point, Map<Point, Double>> eSoftPol, double discountFactor ) {
 		Map<List<Point>, Integer> firstOccurs = findFirstOccurs( episode, tau );
@@ -957,7 +1024,6 @@ public class Game {
 		System.out.println();
 	}
 	
-	
 	public List<double[]> offPolicyMonteCarlo( double discountFactor, int nEpisodes ) {
 		List<double[]> plotData = new ArrayList<double[]>();
 		double episodeIndex[] = new double[nEpisodes];
@@ -967,7 +1033,7 @@ public class Game {
 		initDetPolicy();
 		for( int k = 0; k < nEpisodes; k++ ) { 
 			Map<Point, Map<Point, Double>> eSoftPol = initEpsilonSoftPolicy();
-			ArrayList<ArrayList<Point>> episode = generateEpisode( eSoftPol );
+			ArrayList<ArrayList<Point>> episode = generateEpisodeOffPol( eSoftPol );
 			for( int i = episode.size() - 1; i >= 0; i-- ) {
 				ArrayList<Point> timeStep = episode.get( i );
 				Point state = timeStep.get( 0 );
@@ -993,6 +1059,4 @@ public class Game {
 
 		return plotData;
 	}
-	
-	
 }
