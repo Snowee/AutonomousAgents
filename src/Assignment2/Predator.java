@@ -3,6 +3,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 
 public class Predator {
@@ -15,10 +16,17 @@ public class Predator {
 	public String[] actions = { "WAIT", "NORTH", "EAST", "SOUTH", "WEST" };
 	public double[] probRange = { 0.2, 0.4, 0.6, 0.8, 1 };
 	
-	public Predator() {
+	// init predator either random or static at 0,0
+	public Predator(boolean random) {
 		pos = new Point();
+		Random rand = new Random();
+		if(random){
+			pos.x = rand.nextInt(11);
+			pos.y = rand.nextInt(11);
+		}else{
 		pos.x = 0;
 		pos.y = 0;
+		}
 		nextPosDirections = new HashMap<Point, ArrayList<Point>>();
 		initMap();
 	}

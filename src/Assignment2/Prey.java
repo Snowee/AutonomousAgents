@@ -3,6 +3,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 public class Prey {
 	
 	public Point pos;
@@ -12,11 +13,17 @@ public class Prey {
 		{new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)};
 	double[] probRange = {0.8, 0.85, 0.9, 0.95, 1};
 		
-	public Prey () {
+	// init prey either random or static at 5,5
+	public Prey (boolean random) {
 		pos = new Point();
-		// starting point of prey (5,5)
+		Random rand = new Random();
+		if(random){
+			pos.x = rand.nextInt(11);
+			pos.y = rand.nextInt(11);
+		}else{
 		pos.x = 5;
 		pos.y = 5;
+		}
 	}
 	
 	// Function to determine a random move, based on the probabilities in probRange

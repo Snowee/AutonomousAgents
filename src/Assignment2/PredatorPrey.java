@@ -5,27 +5,45 @@ import java.util.ArrayList;
 public class PredatorPrey {
 
 	public static void main( String[] args ) {
-		double discountFactor = 0.8;
+		double discountFactor = 0.9;
 		double learningRate = 0.1;
+		double epsilon = 0.1;
+		double temperature = 0.5;
+		double initQvalue = 15.0;
 		int nEpisodes = 10000;
 		// boolean if the game is run
 		boolean playGame = false;
 		// Booleans determining which algorithms to run
+		// Turn only one on with true
 		boolean qlearning = false;
 		boolean sarsa = false;
-		boolean useGreedy = true;
 		boolean offPolMC = true;
-		double epsilon = 0.1;
-		double temperature = 1;
+		boolean onPolMC = false;
+		boolean useGreedy = false;
+		
+
 
 		if( !playGame ) {
-			Predator pred = new Predator();
-			Prey prey = new Prey();
+			Predator pred = new Predator(false);
+			Prey prey = new Prey(false);
 			Game game = new Game( pred, prey );
-			if( sarsa )
+			// run the algorithm that is turned on with the booleans above
+			if( sarsa ) {
 				game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy, epsilon, temperature );
-			if( offPolMC )
-				game.offPolicyMonteCarlo( discountFactor, nEpisodes );
+			} else {
+				if( qlearning ) {
+					game.qlearning( learningRate, discountFactor, nEpisodes, useGreedy, initQvalue, epsilon, temperature );
+				} else {
+					if( offPolMC ) {
+						game.offPolicyMonteCarlo( initQvalue, discountFactor, nEpisodes );
+					} else {
+						if( onPolMC ) {
+							game.onPolicyMC(epsilon, discountFactor, nEpisodes);
+						}
+					}
+				}
+			}
+				
 		}
 		else if( playGame ) {
 			ArrayList<Integer> steps = new ArrayList<Integer>();
@@ -35,8 +53,8 @@ public class PredatorPrey {
 			boolean useRandomPolicy = true;
 			
 			for( int i = 0; i < nrOfRuns; i++ ) {
-				Predator pred = new Predator();
-				Prey prey = new Prey();
+				Predator pred = new Predator(false);
+				Prey prey = new Prey(false);
 				Game game = new Game( pred, prey );
 				int step = game.start( useRandomPolicy );
 				sum = sum + step;
