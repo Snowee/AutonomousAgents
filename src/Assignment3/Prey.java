@@ -11,7 +11,8 @@ public class Prey {
 	String[] possibleMoves = {"WAIT","NORTH","EAST","SOUTH","WEST"};
 	Point[] possibleMovesPoint = 
 		{new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)};
-	double[] probRange = {0.8, 0.85, 0.9, 0.95, 1};
+	public String[] actions = { "WAIT", "NORTH", "EAST", "SOUTH", "WEST" };
+	public double[] probRange = { 0.2, 0.4, 0.6, 0.8, 1 };
 		
 	// init prey either random or static at 5,5
 	public Prey (boolean random) {
@@ -27,36 +28,16 @@ public class Prey {
 	}
 	
 	// Function to determine a random move, based on the probabilities in probRange
-	public String getMove( String predNear ) {
-		String move =  "";
+	public String getMove( ) {
 		double chance = Math.random();
-		// if the predator is not in adjacent location
-		if ( predNear.equals("CLEAR") ) {
-			for( int i = 0; i < probRange.length; i++ ) {
-				if( chance <= probRange[i] ) {
-					move = possibleMoves[i];
-					break;
-				}
-			}
-		} else {
-			// if predator is in adjacent location
-			// remove that location from the possibilities and give the
-			// remaining three directions 1/3 of 0.2 of happening
-			List<String> remainingMoves = 
-					new ArrayList<String>( Arrays.asList( possibleMoves ) );
-			List<Double> remainingMoveProbs = Arrays.asList(0.8, 
-					0.2 + 1 * ( 0.20 / 3 ), 0.2 + 2 * ( 0.20 / 3 ), 
-					0.2 + 3 * ( 0.20 / 3 ) );
-			remainingMoves.remove( predNear );
-			for( int i = 0; i < remainingMoves.size(); i++ ) {
-				if( chance < remainingMoveProbs.get(i) ) {
-					move = remainingMoves.get(i);
-					break;
-				}
+		String move =  "";
+		for(int i = 0; i < probRange.length; i++){
+			if(chance <= probRange[i]){
+				move = actions[i];
+				break;
 			}
 		}
-	return move;
-		
+		return move;		
 	}
 	
 	// Function applying a move to the current position
