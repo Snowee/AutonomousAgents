@@ -7,7 +7,6 @@ import java.util.List;
 public class test {
 
 	public static void main(String[] args) {
-		/*
 		double alpha = 0.1;
 		double discountFactor = 0.8;
 		int nEpisodes = 1;
@@ -17,9 +16,11 @@ public class test {
 		double temperature = 0.5;
 		Game game = new Game(2);
 		game.qlearning(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
+		
+		
+		/*
+		Game game = new Game(4);
+		game.start(true);
 		*/
-		Game game = new Game(2);
-		game.start(true, 2);
 	}
-
 }

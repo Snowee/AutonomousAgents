@@ -60,11 +60,11 @@ public class Game {
 	//								 false for good policy moves
 	// 		  boolean reduction - true to use the reduced state space
 	//							  false to use full state space
-	public int start( boolean randomPolicy, int nrPreds ) {
+	public int start( boolean randomPolicy ) {
 		endState = false;
 		Prey prey = new Prey( false );
 		
-		for( int i = 0; i < nrPreds; i++ ) {
+		for( int i = 0; i < numPreds; i++ ) {
 			preds.add( new Predator( false, i ) );
 		}
 		
@@ -91,6 +91,9 @@ public class Game {
 			//System.out.println("\nPrey move");
 			//printGameState( preds, prey.pos);
 
+			//Uncomment below for print statement to see result of movements
+			// of both prey and predator(s)
+			printGameState(preds, prey.pos);
 			
 			// nr of steps
 			counter += 1;
