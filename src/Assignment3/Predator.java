@@ -15,17 +15,19 @@ public class Predator {
 	public double[] policy = { 0.2, 0.2, 0.2, 0.2, 0.2 }; // Wait,N,E,S,West,
 	public String[] actions = { "WAIT", "NORTH", "EAST", "SOUTH", "WEST" };
 	public double[] probRange = { 0.2, 0.4, 0.6, 0.8, 1 };
+	public Point[] predStartLocs = { new Point(0,0), new Point(10,10), 
+			new Point(0,10), new Point(10,0) };
 	
 	// init predator either random or static at 0,0
-	public Predator(boolean random) {
+	public Predator(boolean random, int startLoc ) {
 		pos = new Point();
 		Random rand = new Random();
 		if(random){
 			pos.x = rand.nextInt(11);
 			pos.y = rand.nextInt(11);
 		}else{
-		pos.x = 0;
-		pos.y = 0;
+		pos.x = predStartLocs[startLoc].x;
+		pos.y = predStartLocs[startLoc].y;
 		}
 		nextPosDirections = new HashMap<Point, ArrayList<Point>>();
 		initMap();

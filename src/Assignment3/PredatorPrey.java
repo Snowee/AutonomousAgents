@@ -3,7 +3,7 @@ import java.util.ArrayList;
 
 
 public class PredatorPrey {
-
+/*
 	public static void main( String[] args ) {
 		double discountFactor = 0.9;
 		double learningRate = 0.1;
@@ -88,4 +88,5 @@ public class PredatorPrey {
 		std = Math.sqrt( sum / (array.size() - 1) );
 		return std;
 	}
+	*/
 }
