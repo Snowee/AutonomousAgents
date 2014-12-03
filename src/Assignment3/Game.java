@@ -18,10 +18,8 @@ public class Game {
 	private Predator pred;
 	private Prey prey;
 	private boolean endState;
-	// Class variables for non reduced algorithms
-	public List<Point> allPredPos;
 	// Class variables for reduced algorithms
-	public Map<Point, Map<Point, Double>> Qvalues;
+	//public Map<Point, Map<Point, Double>> Qvalues;
 	public Map<Point, Map<Point, Double>> Nvalues;
 	public Map<Point, Map<Point, Double>> Dvalues;
 	public Map<Point, Point> detPolicy;
@@ -40,14 +38,13 @@ public class Game {
 	
 	// Constructor for a game object
 	public Game() {
-
+		pred = new Predator(false, 1);
 		endState = false;
 		// Initialize all data structures to be used
-		Qvalues = new HashMap<Point, Map<Point, Double>>();
+		//Qvalues = new HashMap<Point, Map<Point, Double>>();
 		Nvalues = new HashMap<Point, Map<Point, Double>>();
 		Dvalues = new HashMap<Point, Map<Point, Double>>();
 		detPolicy = new HashMap<Point, Point>();
-		allPredPos = new ArrayList<Point>();
 		bestPolicy = new HashMap<Point, String>();
 		stateCounts = new HashMap<Point, Integer>();
 		preds = new ArrayList<Predator>();
@@ -1227,92 +1224,99 @@ public class Game {
 	
 	
 	// Initialize reduced state space
-		private void initQvaluesMA(double initialQvalues) {
+		private Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues) {
+			Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
 			List<Point> singleStatePoints = new ArrayList<Point>();
 			
 			List<List<Point>> statePermutations = new ArrayList<List<Point>>();
 			
 			int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 			Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
-			// Random initial Q values
-		    
-			for( int i = 0; i < 11; i++ ) {
-				for( int j = 0; j < 11; j++ ) {
-					Point directionVector = 
-							new Point( directionValues[i], directionValues[j] );
-					singleStatePoints.add(directionVector);
+			Map<Point, Double> actionVal = new HashMap<Point, Double>();
+
+		    if( statesArray.isEmpty() ) {
+				for( int i = 0; i < 11; i++ ) {
+					for( int j = 0; j < 11; j++ ) {
+						Point directionVector = 
+								new Point( directionValues[i], directionValues[j] );
+						singleStatePoints.add(directionVector);
+					}
 				}
-			}
-			
-			for( int i = 0; i < singleStatePoints.size(); i++ ) {
-				for( int j = 0; j < singleStatePoints.size(); j++ ) {
-					for( int k = 0; k < singleStatePoints.size(); k++ ) {
-						for( int m = 0; m < singleStatePoints.size(); m++ ) {
-							List<Point> permutation = new ArrayList<Point>();
-							permutation.add( singleStatePoints.get(i) );
-							permutation.add( singleStatePoints.get(j) );
-							permutation.add( singleStatePoints.get(k) );
-							permutation.add( singleStatePoints.get(m) );
-							statePermutations.add(permutation);
+				
+				for( int i = 0; i < singleStatePoints.size(); i++ ) {
+					for( int j = 0; j < singleStatePoints.size(); j++ ) {
+						for( int k = 0; k < singleStatePoints.size(); k++ ) {
+							for( int m = 0; m < singleStatePoints.size(); m++ ) {
+								List<Point> permutation = new ArrayList<Point>();
+								permutation.add( singleStatePoints.get(i) );
+								permutation.add( singleStatePoints.get(j) );
+								permutation.add( singleStatePoints.get(k) );
+								permutation.add( singleStatePoints.get(m) );
+								statePermutations.add(permutation);
+							}
 						}
 					}
 				}
+				statesArray = statePermutations;
+
+		    } else {
+		    	for( List<Point> state : statesArray ) {
+		    		List<Point> copyState = new ArrayList<Point>();
+		    		for( Point stateElem : state ) {
+		    			copyState.add( (Point) stateElem.clone() );
+		    		}
+		    		statePermutations.add(copyState);
+		    	}
+		    }
+				
+			for(int k = 0; k < pred.actions.length; k++){
+				actionValterm.put(move(pred.actions[k]), 0.0);
 			}
-			
+			// Random initial Q values
 			if(initialQvalues < 0.0){
 				Random rand = new Random();
 				for( int i = 0; i < statePermutations.size(); i++ ) {
 					List<Point> state = statePermutations.get(i);
+					Map<Point, Double> actionQVal;
 					for( int j = 0; j < state.size(); j++ ) {
-						if( Collections.frequency( state, state.get(j) ) > 1 ) {
-							
-						}
-						if( state.get(j).equals(new Point(0,0) ) ) {
-							
-						}
-					}
-				}
-				for( int i = 0; i < 11; i++ ) {
-					for( int j = 0; j < 11; j++ ) {
-						Point directionVector = 
-								new Point( directionValues[i], directionValues[j] );
-						Map<Point, Double> actionQVal;
-						if( directionVector.equals( new Point(0,0) ) ) {
-							for(int k = 0; k < pred.actions.length; k++){
-								actionValterm.put(move(pred.actions[k]), 0.0);
-							}
-							actionQVal = new HashMap<Point, Double>(actionValterm);
+						if( Collections.frequency( state, state.get(j) ) > 1 
+								|| state.get(j).equals(new Point(0,0) ) ) {
+							actionQVal = new HashMap<Point,Double>(actionValterm);
+							Qvalues.put(state.toString(), actionQVal);
+							break;
 						} else {
-							Map<Point, Double> actionVal = new HashMap<Point, Double>();
-							for(int k = 0; k < pred.actions.length; k++){
+							for( int k = 0; k < pred.actions.length; k++ ) {
 								actionVal.put(move(pred.actions[k]), (double) rand.nextInt(21));
 							}
 							actionQVal = new HashMap<Point, Double>(actionVal);
+							Qvalues.put(state.toString(), actionQVal);
+							break;
 						}
-						Qvalues.put( directionVector, actionQVal );
+								
+						
 					}
 				}
 			} else{
-				Map<Point, Double> actionVal = new HashMap<Point, Double>();
 				for(int i = 0; i < pred.actions.length; i++){
-					actionValterm.put(move(pred.actions[i]), 0.0);
 					actionVal.put(move(pred.actions[i]), initialQvalues);
 				}
-				for( int i = 0; i < 11; i++ ) {
-					for( int j = 0; j < 11; j++ ) {
-						Point directionVector = 
-								new Point( directionValues[i], directionValues[j] );
+				for( int i = 0; i < statePermutations.size(); i++ ) {
+						List<Point> state = statePermutations.get(i);
 						Map<Point, Double> actionQVal;
-						if( directionVector.equals( new Point(0,0) ) ) {
-							actionQVal = new HashMap<Point, Double>(actionValterm);
-						} else {
-							actionQVal = new HashMap<Point, Double>(actionVal);
-						}
-						Qvalues.put( directionVector, actionQVal );
+						for( int j = 0; j < state.size(); j++ ) {
+							if( Collections.frequency( state, state.get(j) ) > 1 
+									|| state.get(j).equals(new Point(0,0) ) ) {
+								actionQVal = new HashMap<Point,Double>(actionValterm);
+								Qvalues.put(state.toString(), actionQVal);
+								break;
+							} else {
+								actionQVal = new HashMap<Point, Double>(actionVal);
+								Qvalues.put(state.toString(), actionQVal);
+								break;
+							}
 					}
 				}
 			}
-			Set<Point> states = Qvalues.keySet();
-			statesArray = states.toArray( new Point[states.size()] );
+			return Qvalues;
 		}
 }
