@@ -1227,11 +1227,11 @@ public class Game {
 //	}
 	
 	
-	public void addToPermSet( int layerNr ) {
-		for( int i = 0; i < singleStatePoints.size(); i++ ) {
+	public void addToPermSet( int layerNr, int callCount ) {
+		for( int i = 0; i < (int) Math.pow(singleStatePoints.size(), callCount); i++ ) {
 			for( int j = 0; j < (int)Math.pow(singleStatePoints.size(), layerNr-1); j++ ) {
 				int index = i * (int)Math.pow(singleStatePoints.size(), layerNr-1) + j;
-				statePermutations.get(index).add(singleStatePoints.get(i));
+				statePermutations.get(index).add(singleStatePoints.get((int) Math.pow(i, (1/callCount))));
 			}
 		}
 	}
@@ -1271,27 +1271,28 @@ public class Game {
 				}
 				
 				initStateSpace( nrPreds );
-				
+				int callCount = 1;
 				for( int i = nrPreds; i > 1; i-- ) {
-					addToPermSet( i );
+					addToPermSet( i, callCount );
+					callCount++;
 				}
 				
 				addFinalLayer();
 				
-				for( int i = 0; i < singleStatePoints.size(); i++ ) {
-					for( int j = 0; j < singleStatePoints.size(); j++ ) {
-						for( int k = 0; k < singleStatePoints.size(); k++ ) {
-							for( int m = 0; m < singleStatePoints.size(); m++ ) {
-								List<Point> permutation = new ArrayList<Point>();
-								permutation.add( singleStatePoints.get(i) );
-								permutation.add( singleStatePoints.get(j) );
-								permutation.add( singleStatePoints.get(k) );
-								permutation.add( singleStatePoints.get(m) );
-								statePermutations.add(permutation);
-							}
-						}
-					}
-				}
+//				for( int i = 0; i < singleStatePoints.size(); i++ ) {
+//					for( int j = 0; j < singleStatePoints.size(); j++ ) {
+//						for( int k = 0; k < singleStatePoints.size(); k++ ) {
+//							for( int m = 0; m < singleStatePoints.size(); m++ ) {
+//								List<Point> permutation = new ArrayList<Point>();
+//								permutation.add( singleStatePoints.get(i) );
+//								permutation.add( singleStatePoints.get(j) );
+//								permutation.add( singleStatePoints.get(k) );
+//								permutation.add( singleStatePoints.get(m) );
+//								statePermutations.add(permutation);
+//							}
+//						}
+//					}
+//				}
 				statesArray = statePermutations;
 
 		    } else {
