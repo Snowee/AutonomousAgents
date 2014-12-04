@@ -1,5 +1,6 @@
 package Assignment3;
 import java.util.ArrayList;
+import java.util.Collections;
 
 
 public class PredatorPrey {
@@ -23,6 +24,12 @@ public class PredatorPrey {
 		
 		Game game1 = new Game( );
 		game1.initQvaluesMA(15.0, 3);
+		
+		for( int i = 0; i < 1771561; i++ ) {
+			if(Collections.frequency(game1.statesArray, game1.statesArray.get(i)) > 1 ) {
+				System.out.println(Collections.frequency(game1.statesArray, game1.statesArray.get(i)));
+			}
+		}
 
 //		if( !playGame ) {
 //			Predator pred = new Predator(false, 1);

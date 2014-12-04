@@ -24,7 +24,7 @@ public class Game {
 	public Map<Point, Map<Point, Double>> Dvalues;
 	public Map<Point, Point> detPolicy;
 	public Map<Point, String> bestPolicy;
-	private List<List<Point>> statesArray;
+	public List<List<Point>> statesArray;
 	private List<Double> rewardList = new ArrayList<Double>();
 	private Map<List<Point>, Boolean> appearanceList = 
 			new HashMap<List<Point>, Boolean>();
@@ -1230,8 +1230,10 @@ public class Game {
 	public void addToPermSet( int layerNr, int callCount ) {
 		for( int i = 0; i < (int) Math.pow(singleStatePoints.size(), callCount); i++ ) {
 			for( int j = 0; j < (int)Math.pow(singleStatePoints.size(), layerNr-1); j++ ) {
-				int index = i * (int)Math.pow(singleStatePoints.size(), layerNr-1) + j;
-				statePermutations.get(index).add(singleStatePoints.get((int) Math.pow(i, (1/callCount))));
+				int index = i * ((int)Math.pow(singleStatePoints.size(), layerNr-1)) + j;
+				double temp = Math.floor(i / singleStatePoints.size());
+				int index1 = i - (int) temp * singleStatePoints.size();
+				statePermutations.get(index).add(singleStatePoints.get(index1));
 			}
 		}
 	}
@@ -1239,7 +1241,7 @@ public class Game {
 	public void addFinalLayer() {
 		for( int j = 0; j < statePermutations.size()/singleStatePoints.size(); j++ ) {
 			for( int i = 0; i < singleStatePoints.size(); i++ ) {
-				int index = j * singleStatePoints.size() + i;
+				int index = j * (singleStatePoints.size()) + i;
 				statePermutations.get(index).add(singleStatePoints.get(i));
 			}
 		}
@@ -1293,6 +1295,7 @@ public class Game {
 //						}
 //					}
 //				}
+				
 				statesArray = statePermutations;
 
 		    } else {
