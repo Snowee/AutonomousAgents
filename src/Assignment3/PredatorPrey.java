@@ -21,7 +21,8 @@ public class PredatorPrey {
 		boolean onPolMC = false;
 		boolean useGreedy = false;
 		
-
+		Game game1 = new Game( );
+		game1.initQvaluesMA(15.0, 3);
 
 //		if( !playGame ) {
 //			Predator pred = new Predator(false, 1);

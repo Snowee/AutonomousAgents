@@ -32,6 +32,8 @@ public class Game {
 			new HashMap<Point, Point>();
 	Map<Point, Integer> stateCounts;
 	
+	public static List<List<Point>> statePermutations;
+	public static List<Point> singleStatePoints;
 	public ArrayList<Predator> preds;
 	int predWins;
 	int preyWins;
@@ -50,6 +52,8 @@ public class Game {
 		preds = new ArrayList<Predator>();
 		predWins = 0;
 		preyWins = 0;
+		statesArray = new ArrayList<List<Point>>();
+
 	}
 	
 	// Function to run a single game, each turn starting by a move of the prey
@@ -1223,12 +1227,35 @@ public class Game {
 //	}
 	
 	
+	public void addToPermSet( int layerNr ) {
+		for( int i = 0; i < singleStatePoints.size(); i++ ) {
+			for( int j = 0; j < (int)Math.pow(singleStatePoints.size(), layerNr-1); j++ ) {
+				int index = i * (int)Math.pow(singleStatePoints.size(), layerNr-1) + j;
+				statePermutations.get(index).add(singleStatePoints.get(i));
+			}
+		}
+	}
+	
+	public void addFinalLayer() {
+		for( int j = 0; j < statePermutations.size()/singleStatePoints.size(); j++ ) {
+			for( int i = 0; i < singleStatePoints.size(); i++ ) {
+				int index = j * singleStatePoints.size() + i;
+				statePermutations.get(index).add(singleStatePoints.get(i));
+			}
+		}
+	}
+	
+	public void initStateSpace( int nrPreds ) {
+		for( int i = 0; i < (int) Math.pow(singleStatePoints.size(), nrPreds); i++ ) {
+			statePermutations.add(new ArrayList<Point>());
+		}
+	}
 	// Initialize reduced state space
-		private Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues) {
+		public Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues, int nrPreds) {
 			Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
-			List<Point> singleStatePoints = new ArrayList<Point>();
+			singleStatePoints = new ArrayList<Point>();
 			
-			List<List<Point>> statePermutations = new ArrayList<List<Point>>();
+			statePermutations = new ArrayList<List<Point>>();
 			
 			int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 			Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
@@ -1242,6 +1269,14 @@ public class Game {
 						singleStatePoints.add(directionVector);
 					}
 				}
+				
+				initStateSpace( nrPreds );
+				
+				for( int i = nrPreds; i > 1; i-- ) {
+					addToPermSet( i );
+				}
+				
+				addFinalLayer();
 				
 				for( int i = 0; i < singleStatePoints.size(); i++ ) {
 					for( int j = 0; j < singleStatePoints.size(); j++ ) {
