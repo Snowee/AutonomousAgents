@@ -1,7 +1,9 @@
 package Assignment3;
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -14,6 +16,8 @@ public class Predator {
 	// random policy, each action same probability
 	public double[] policy = { 0.2, 0.2, 0.2, 0.2, 0.2 }; // Wait,N,E,S,West,
 	public String[] actions = { "WAIT", "NORTH", "EAST", "SOUTH", "WEST" };
+	public List<Point> possMoves = new ArrayList<Point>( 
+			Arrays.asList( new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)));
 	public double[] probRange = { 0.2, 0.4, 0.6, 0.8, 1 };
 	public Point[] predStartLocs = { new Point(0,0), new Point(10,10), 
 			new Point(0,10), new Point(10,0) };

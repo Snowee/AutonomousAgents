@@ -38,6 +38,8 @@ public class Game {
 	int predWins;
 	int preyWins;
 	
+	Map<String, Integer> stateIndex;
+	
 	// Constructor for a game object
 	public Game() {
 		pred = new Predator(false, 1);
@@ -53,6 +55,7 @@ public class Game {
 		predWins = 0;
 		preyWins = 0;
 		statesArray = new ArrayList<List<Point>>();
+		stateIndex = new HashMap<String, Integer>();
 
 	}
 	
@@ -1253,21 +1256,23 @@ public class Game {
 		}
 	}
 	// Initialize reduced state space
-		public Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues, int nrPreds) {
-			Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
+		public double[][] initQvaluesMA(double initialQvalues, int nrPreds) {
+			double[][] Qvalues;
 			singleStatePoints = new ArrayList<Point>();
 			
 			statePermutations = new ArrayList<List<Point>>();
 			
-			int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
-			Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
-			Map<Point, Double> actionVal = new HashMap<Point, Double>();
-
+			double[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
+//			Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
+//			Map<Point, Double> actionVal = new HashMap<Point, Double>();
+			double[] actionValterm = new double[5];
+			double[] actionVal = new double[5];
+			
 		    if( statesArray.isEmpty() ) {
 				for( int i = 0; i < 11; i++ ) {
 					for( int j = 0; j < 11; j++ ) {
 						Point directionVector = 
-								new Point( directionValues[i], directionValues[j] );
+								new Point( (int)directionValues[i], (int)directionValues[j] );
 						singleStatePoints.add(directionVector);
 					}
 				}
@@ -1308,27 +1313,33 @@ public class Game {
 		    	}
 		    }
 				
+		    Qvalues = new double[statePermutations.size()][5];
 			for(int k = 0; k < pred.actions.length; k++){
-				actionValterm.put(move(pred.actions[k]), 0.0);
+				actionValterm[k] = 0.0;
 			}
 			// Random initial Q values
 			if(initialQvalues < 0.0){
+				int stateIndexCount = 0;
 				Random rand = new Random();
 				for( int i = 0; i < statePermutations.size(); i++ ) {
 					List<Point> state = statePermutations.get(i);
-					Map<Point, Double> actionQVal;
+					double[] actionQVal;
 					for( int j = 0; j < state.size(); j++ ) {
 						if( Collections.frequency( state, state.get(j) ) > 1 
 								|| state.get(j).equals(new Point(0,0) ) ) {
-							actionQVal = new HashMap<Point,Double>(actionValterm);
-							Qvalues.put(state.toString(), actionQVal);
+							actionQVal = (double[]) actionValterm.clone();
+							stateIndex.put(state.toString(), stateIndexCount);
+							Qvalues[stateIndexCount] = (double[]) actionQVal.clone();
+							stateIndexCount++;
 							break;
 						} else {
 							for( int k = 0; k < pred.actions.length; k++ ) {
-								actionVal.put(move(pred.actions[k]), (double) rand.nextInt(21));
+								actionVal[k] = (double) rand.nextInt(21);
 							}
-							actionQVal = new HashMap<Point, Double>(actionVal);
-							Qvalues.put(state.toString(), actionQVal);
+							actionQVal = (double[]) actionVal.clone();
+							stateIndex.put(state.toString(), stateIndexCount);
+							Qvalues[stateIndexCount] = (double[]) actionQVal.clone();
+							stateIndexCount++;
 							break;
 						}
 								
@@ -1336,21 +1347,26 @@ public class Game {
 					}
 				}
 			} else{
+				int stateIndexCount = 0;
 				for(int i = 0; i < pred.actions.length; i++){
-					actionVal.put(move(pred.actions[i]), initialQvalues);
+					actionVal[i] = initialQvalues;
 				}
 				for( int i = 0; i < statePermutations.size(); i++ ) {
 						List<Point> state = statePermutations.get(i);
-						Map<Point, Double> actionQVal;
+						double[] actionQVal;
 						for( int j = 0; j < state.size(); j++ ) {
 							if( Collections.frequency( state, state.get(j) ) > 1 
 									|| state.get(j).equals(new Point(0,0) ) ) {
-								actionQVal = new HashMap<Point,Double>(actionValterm);
-								Qvalues.put(state.toString(), actionQVal);
+								actionQVal = (double[]) actionValterm.clone();
+								stateIndex.put(state.toString(), stateIndexCount);
+								Qvalues[stateIndexCount] = (double[]) actionQVal.clone();
+								stateIndexCount++;
 								break;
 							} else {
-								actionQVal = new HashMap<Point, Double>(actionVal);
-								Qvalues.put(state.toString(), actionQVal);
+								actionQVal = (double[]) actionVal.clone();
+								stateIndex.put(state.toString(), stateIndexCount);
+								Qvalues[stateIndexCount] = (double[]) actionQVal.clone();
+								stateIndexCount++;
 								break;
 							}
 					}

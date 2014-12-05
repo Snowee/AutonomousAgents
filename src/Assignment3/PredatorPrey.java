@@ -1,6 +1,8 @@
 package Assignment3;
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 
 
 public class PredatorPrey {
@@ -23,13 +25,17 @@ public class PredatorPrey {
 		boolean useGreedy = false;
 		
 		Game game1 = new Game( );
-		game1.initQvaluesMA(15.0, 3);
+		double[][] qs1 = game1.initQvaluesMA(15.0, 4);
+		double[][] qs2 = game1.initQvaluesMA(15.0, 4);
+		double[][] qs3 = game1.initQvaluesMA(15.0, 4);
+		double[][] qs4 = game1.initQvaluesMA(15.0, 4);
+
 		
-		for( int i = 0; i < 1771561; i++ ) {
-			if(Collections.frequency(game1.statesArray, game1.statesArray.get(i)) > 1 ) {
-				System.out.println(Collections.frequency(game1.statesArray, game1.statesArray.get(i)));
-			}
-		}
+//		for( int i = 0; i < 1771561; i++ ) {
+//			if(Collections.frequency(game1.statesArray, game1.statesArray.get(i)) > 1 ) {
+//				System.out.println(Collections.frequency(game1.statesArray, game1.statesArray.get(i)));
+//			}
+//		}
 
 //		if( !playGame ) {
 //			Predator pred = new Predator(false, 1);
