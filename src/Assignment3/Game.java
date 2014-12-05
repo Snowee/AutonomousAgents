@@ -19,8 +19,10 @@ public class Game {
 	public List<Map<String, Map<Point, Double>>> QvalList;
 	public Map<String, Map<Point, Double>> QvalPrey;
 	public int numPreds;
-	private List<List<Point>> statesArray;
+	public List<List<Point>> statesArray;
 	public ArrayList<Predator> preds;
+	public static List<List<Point>> statePermutations;
+	public static List<Point> singleStatePoints;
 	int predWins;
 	int preyWins;
 	
@@ -460,14 +462,18 @@ public class Game {
 	// Function implementing the Q-learning algorithm
 	public void qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
 			double initQval, double epsilon, double temperature){
+		System.out.println("Initializing Q-values for Predator(s) and Prey....");
 		for( int i = 0; i < numPreds; i++ ){
-			QvalList.set(i, initQvaluesMA(initQval));
+			System.out.println(i);
+			QvalList.set(i, initQvaluesMA(initQval, numPreds));
 		}
 		// Also initialize Qvalues for prey
-		QvalPrey = initQvaluesMA(initQval);
+		QvalPrey = initQvaluesMA(initQval, numPreds);
+		System.out.println("Initialized Q-values for Predator(s) and Prey");
 		
 		for( int i = 0; i < nEpisodes; i++){
 			List<Point> state = initS(numPreds);
+			//System.out.println(state);
 			//String sPrey = computePreyState(sPreds);
 			boolean inTerminalState = false;
 			int stepCounter = 0;
@@ -482,7 +488,7 @@ public class Game {
 				}
 				List<Point> sPrime = new ArrayList<Point>();
 				for( int a = 0; a < numPreds; a++ ){
-					Point action;
+					Point action = new Point(7,7);
 					if(greedy){
 						action = getActionGreedy(epsilon, state, QvalList.get(a));
 					} else{
@@ -590,6 +596,12 @@ public class Game {
 	private double computeQvalueQL(List<Point> s, Point action, double alpha, 
 			double discountFactor, List<Point> sPrime, int reward, Map<String, Map<Point, Double>> Qvalues){
 		double oldqval = Qvalues.get(s.toString()).get(action);
+		System.out.println("----");
+		System.out.println(sPrime);
+		//System.out.println(s);
+		//System.out.println(action);
+		System.out.println(statesArray.contains(sPrime));
+		System.out.println("----");
 		Set<Point> sPrimeActions = Qvalues.get(sPrime.toString()).keySet();
 		double maxPrimeQval = 0;
 		for(Point actionPrime : sPrimeActions){
@@ -704,15 +716,59 @@ public class Game {
 					}
 				}
 			}
-	
 			return initState;
 		}
-	
-		private Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues) {
-			Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
-			List<Point> singleStatePoints = new ArrayList<Point>();
+		
+		//public void addToPermSet( int layerNr, int callCount ) {
+		public void addToPermSet(int nAg, int callCount ){
+			int indexPermList = 0;
+			while(indexPermList < Math.pow(singleStatePoints.size(), nAg)){
+				for(int j = 0; j < singleStatePoints.size(); j++ ){
+					for(int r = 0; r < (int) Math.pow(singleStatePoints.size(), (nAg - callCount)); r++){
+						statePermutations.get(indexPermList).add(singleStatePoints.get(j));
+						indexPermList++;
+					}
+				}
+			}
+			/*
+			for( int i = 0; i < (int) Math.pow(singleStatePoints.size(), numag); i++){
+				for(int j = 0; j < singleStatePoints.size(); j++ ){
+					for(int r = 0; r < (int) Math.pow(singleStatePoints.size(), (numag - callCount)); r++){
+						statePermutations.get(i).add(c)
+					}	
+				}
+			}*/
 			
-			List<List<Point>> statePermutations = new ArrayList<List<Point>>();
+			/*
+			for( int i = 0; i < (int) Math.pow(singleStatePoints.size(), callCount); i++ ) {
+				for( int j = 0; j < (int)Math.pow(singleStatePoints.size(), layerNr-1); j++ ) {
+					int index = i * (int)Math.pow(singleStatePoints.size(), layerNr-1) + j;
+					statePermutations.get(index).add(singleStatePoints.get((int) Math.pow(i, (1/callCount))));
+				}
+			}
+			*/
+		}
+		
+		public void addFinalLayer() {
+			for( int j = 0; j < statePermutations.size()/singleStatePoints.size(); j++ ) {
+				for( int i = 0; i < singleStatePoints.size(); i++ ) {
+					int index = j * singleStatePoints.size() + i;
+					statePermutations.get(index).add(singleStatePoints.get(i));
+				}
+			}
+		}
+		
+		public void initStateSpace( int nrPreds ) {
+			for( int i = 0; i < (int) Math.pow(singleStatePoints.size(), nrPreds); i++ ) {
+				statePermutations.add(new ArrayList<Point>());
+			}
+		}
+		// Initialize reduced state space
+		public Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues, int nrPreds) {
+			Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
+			singleStatePoints = new ArrayList<Point>();
+			
+			statePermutations = new ArrayList<List<Point>>();
 			
 			int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
 			Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
@@ -727,23 +783,38 @@ public class Game {
 					}
 				}
 				
-				for( int i = 0; i < singleStatePoints.size(); i++ ) {
-					for( int j = 0; j < singleStatePoints.size(); j++ ) {
-						for( int k = 0; k < singleStatePoints.size(); k++ ) {
-							for( int m = 0; m < singleStatePoints.size(); m++ ) {
-								List<Point> permutation = new ArrayList<Point>();
-								permutation.add( singleStatePoints.get(i) );
-								permutation.add( singleStatePoints.get(j) );
-								permutation.add( singleStatePoints.get(k) );
-								permutation.add( singleStatePoints.get(m) );
-								statePermutations.add(permutation);
-							}
-						}
-					}
+				initStateSpace( nrPreds );
+				int callCount = 1;
+				//for( int i = nrPreds; i > 1; i-- ) {
+				for(int i = 0; i < nrPreds; i++ ){
+					//addToPermSet( i, callCount );
+					addToPermSet(nrPreds, callCount);
+					callCount++;
 				}
+				
+				addFinalLayer();
+				
+//				for( int i = 0; i < singleStatePoints.size(); i++ ) {
+//					for( int j = 0; j < singleStatePoints.size(); j++ ) {
+//						for( int k = 0; k < singleStatePoints.size(); k++ ) {
+//							for( int m = 0; m < singleStatePoints.size(); m++ ) {
+//								List<Point> permutation = new ArrayList<Point>();
+//								permutation.add( singleStatePoints.get(i) );
+//								permutation.add( singleStatePoints.get(j) );
+//								permutation.add( singleStatePoints.get(k) );
+//								permutation.add( singleStatePoints.get(m) );
+//								statePermutations.add(permutation);
+//							}
+//						}
+//					}
+//				}
 				statesArray = statePermutations;
 
-		    } else {
+		    } else{
+		    	statePermutations = statesArray;
+		    }
+		    
+		    	/*else {
 		    	for( List<Point> state : statesArray ) {
 		    		List<Point> copyState = new ArrayList<Point>();
 		    		for( Point stateElem : state ) {
@@ -751,7 +822,7 @@ public class Game {
 		    		}
 		    		statePermutations.add(copyState);
 		    	}
-		    }
+		    }*/
 				
 			for(int k = 0; k < pred.actions.length; k++){
 				actionValterm.put(move(pred.actions[k]), 0.0);
@@ -786,24 +857,28 @@ public class Game {
 				}
 				for( int i = 0; i < statePermutations.size(); i++ ) {
 						List<Point> state = statePermutations.get(i);
-						Map<Point, Double> actionQVal;
+						//Map<Point, Double> actionQVal;
+						boolean zeroValue = false;
 						for( int j = 0; j < state.size(); j++ ) {
 							if( Collections.frequency( state, state.get(j) ) > 1 
 									|| state.get(j).equals(new Point(0,0) ) ) {
-								actionQVal = new HashMap<Point,Double>(actionValterm);
-								Qvalues.put(state.toString(), actionQVal);
-								break;
-							} else {
-								actionQVal = new HashMap<Point, Double>(actionVal);
-								Qvalues.put(state.toString(), actionQVal);
+								//actionQVal = new HashMap<Point,Double>(actionValterm);
+								//Qvalues.put(state.toString(), actionQVal);
+								zeroValue = true;
 								break;
 							}
-					}
+						}
+						if(zeroValue){
+							Qvalues.put(state.toString(), new HashMap<Point, Double>(actionValterm));
+						} else {
+							//actionQVal = new HashMap<Point, Double>(actionVal);
+							//Qvalues.put(state.toString(), actionQVal);
+							Qvalues.put(state.toString(), new HashMap<Point, Double>(actionVal));
+						}
 				}
 			}
 			return Qvalues;
 		}
-
 	/*
 	// Function to print the number of times a state is updated
 	public void printStateCount( Map<Point, Integer> map, Point preyLoc ) {
