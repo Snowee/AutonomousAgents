@@ -1,5 +1,5 @@
 package Assignment3;
-import java.awt.Point;
+import java.awt.Point; 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -15,9 +15,13 @@ import java.util.Set;
 
 public class Game {
 	private Predator pred;
+	private Prey prey;
 	private boolean endState;
-	public List<Map<String, Map<Point, Double>>> QvalList;
-	public Map<String, Map<Point, Double>> QvalPrey;
+	//public List<Map<String, Map<Point, Double>>> QvalList;
+	public Map<String, Integer> stateIndex;
+	public List<double[][]> QvalList;
+	//public Map<String, Map<Point, Double>> QvalPrey;
+	public double[][] QvalPrey;
 	public int numPreds;
 	public List<List<Point>> statesArray;
 	public ArrayList<Predator> preds;
@@ -42,16 +46,21 @@ public class Game {
 			this.numPreds = numPreds;
 			endState = false;
 			// Initialize all data structures to be used
-			QvalList = new ArrayList<Map<String, Map<Point, Double>>>();
+			//QvalList = new ArrayList<Map<String, Map<Point, Double>>>();
+			QvalList = new ArrayList<double[][]>();
+			/*
 			for( int i = 0; i < numPreds; i++ ){
 				QvalList.add(new HashMap<String, Map<Point, Double>>());
-			}
-			QvalPrey = new HashMap<String, Map<Point, Double>>();
+			}*/
+			//QvalPrey = new HashMap<String, Map<Point, Double>>();
+			
 			statesArray = new ArrayList<List<Point>>();
 			pred = new Predator(false, 0);
 			preds = new ArrayList<Predator>();
+			prey = new Prey(false);
 			predWins = 0;
 			preyWins = 0;
+			stateIndex = new HashMap<String, Integer>();
 		}
 	}
 	
@@ -464,8 +473,8 @@ public class Game {
 			double initQval, double epsilon, double temperature){
 		System.out.println("Initializing Q-values for Predator(s) and Prey....");
 		for( int i = 0; i < numPreds; i++ ){
-			System.out.println(i);
-			QvalList.set(i, initQvaluesMA(initQval, numPreds));
+			//System.out.println(i);
+			QvalList.add(initQvaluesMA(initQval, numPreds));
 		}
 		// Also initialize Qvalues for prey
 		QvalPrey = initQvaluesMA(initQval, numPreds);
@@ -473,6 +482,7 @@ public class Game {
 		
 		for( int i = 0; i < nEpisodes; i++){
 			List<Point> state = initS(numPreds);
+			System.out.printf("Initial state for episode %d initialized\n", i+1);
 			//System.out.println(state);
 			//String sPrey = computePreyState(sPreds);
 			boolean inTerminalState = false;
@@ -486,6 +496,8 @@ public class Game {
 				} else{
 					actionPrey = getActionSoftmax(temperature, state, QvalPrey);
 				}
+			//	System.out.println("----");
+			//	System.out.println(prey.actions[prey.possMoves.indexOf(actionPrey)]);
 				List<Point> sPrime = new ArrayList<Point>();
 				for( int a = 0; a < numPreds; a++ ){
 					Point action = new Point(7,7);
@@ -494,12 +506,14 @@ public class Game {
 					} else{
 						action = getActionSoftmax(temperature, state, QvalList.get(a));
 					}
+				//	System.out.println(pred.actions[pred.possMoves.indexOf(action)]);
 					actions.add(action);
 					Point dTemp = (Point) state.get(a).clone();
 					dTemp.translate(actionPrey.x, actionPrey.y); // influence of prey move on pred direction vector
 					dTemp.translate(-1*action.x, -1*action.y); // influence of pred move on own direction vector
 					sPrime.add(pred.checkDirections(dTemp));
 				}
+			//	System.out.println("-------");
 				int[] rewardsAndTerminal = interactWithEnvRew(sPrime);
 				int rewardPred = rewardsAndTerminal[0];
 				int rewardPrey = rewardsAndTerminal[1];
@@ -511,12 +525,14 @@ public class Game {
 				for( int a = 0; a < numPreds; a++ ){
 					double newQval = computeQvalueQL(state, actions.get(a), 
 							alpha, discountFactor, sPrime, rewardPred, QvalList.get(a) );
-					QvalList.get(a).get(state.toString()).put(actions.get(a), newQval);
+					QvalList.get(a)[stateIndex.get(state.toString())][pred.possMoves.indexOf(actions.get(a))] = newQval;
+					//QvalList.get(a).get(state.toString()).put(actions.get(a), newQval);
 				}
 				// Compute Q-value for current state-action s,a for prey
 				double newQvalPrey = computeQvalueQL(state, actionPrey, alpha, 
 						discountFactor, sPrime, rewardPrey, QvalPrey );
-				QvalPrey.get(state.toString()).put(actionPrey, newQvalPrey);
+				//QvalPrey.get(state.toString()).put(actionPrey, newQvalPrey);
+				QvalPrey[stateIndex.get(state.toString())][prey.possMoves.indexOf(actionPrey)] = newQvalPrey;
 				
 				// State = State'
 				state.clear();
@@ -593,22 +609,33 @@ public class Game {
 	}*/
 	
 	// Compute Q-value in Qlearning for state s (for predator)
+	//private double computeQvalueQL(List<Point> s, Point action, double alpha, 
+	//		double discountFactor, List<Point> sPrime, int reward, Map<String, Map<Point, Double>> Qvalues){
 	private double computeQvalueQL(List<Point> s, Point action, double alpha, 
-			double discountFactor, List<Point> sPrime, int reward, Map<String, Map<Point, Double>> Qvalues){
-		double oldqval = Qvalues.get(s.toString()).get(action);
-		System.out.println("----");
-		System.out.println(sPrime);
+			double discountFactor, List<Point> sPrime, int reward, double[][] Qvalues){
+		double oldqval = Qvalues[stateIndex.get(s.toString())][pred.possMoves.indexOf(action)];
+		//double oldqval = Qvalues.get(s.toString())[pred.possibleMovesPoint.]
+		//double oldqval = Qvalues.get(s.toString()).get(action);
+	//	System.out.println("----");
+	//	System.out.println(sPrime);
 		//System.out.println(s);
 		//System.out.println(action);
-		System.out.println(statesArray.contains(sPrime));
-		System.out.println("----");
-		Set<Point> sPrimeActions = Qvalues.get(sPrime.toString()).keySet();
+	//	System.out.println(statesArray.contains(sPrime));
+	//	System.out.println("----");
+		double[] sPrimeActVal = Qvalues[stateIndex.get(sPrime.toString())];
+	//	Set<Point> sPrimeActions = Qvalues.get(sPrime.toString()).keySet();
 		double maxPrimeQval = 0;
+		for(int i = 0; i < sPrimeActVal.length; i++){
+			if(sPrimeActVal[i] >= maxPrimeQval){
+				maxPrimeQval = sPrimeActVal[i];
+			}
+		}
+		/*
 		for(Point actionPrime : sPrimeActions){
 			if(Qvalues.get(sPrime.toString()).get(actionPrime) >= maxPrimeQval){
 				maxPrimeQval = Qvalues.get(sPrime.toString()).get(actionPrime);
 			}
-		}
+		}*/
 		double qval = oldqval + alpha*(reward + 
 				(discountFactor*maxPrimeQval) - oldqval);
 		
@@ -616,7 +643,8 @@ public class Game {
 	}
 	
 	// Get epsilon-greedy action for predator
-	private Point getActionGreedy(double epsilon, List<Point> state, Map<String, Map<Point, Double>> Qvalues){
+	//private Point getActionGreedy(double epsilon, List<Point> state, Map<String, Map<Point, Double>> Qvalues){
+	private Point getActionGreedy(double epsilon, List<Point> state, double[][] Qvalues){
 		Random rand = new Random();
 		double chance = rand.nextDouble();
 		Point action = new Point();
@@ -624,16 +652,17 @@ public class Game {
 		// Select random action with probability epsilon
 		if(chance < epsilon){
 			//System.out.println("Random action");
-			action = move(pred.actions[rand.nextInt(pred.actions.length)]);
+			action = pred.possMoves.get(rand.nextInt(pred.possMoves.size()));
 		}
 		// Select optimal action
 		else{
 			double maxVal = 0;
-			Map<Point, Double> valActFromState = Qvalues.get(state.toString());
-			for(Map.Entry<Point, Double> entry : valActFromState.entrySet()){
-				if(entry.getValue() >= maxVal){
-					action = entry.getKey();
-					maxVal = entry.getValue();
+			//Map<Point, Double> valActFromState = Qvalues.get(state.toString());
+			double[] valActFromState = Qvalues[stateIndex.get(state.toString())];
+			for(int i = 0; i < valActFromState.length; i ++){
+				if( valActFromState[i] >= maxVal ){
+					action = pred.possMoves.get(i);
+					maxVal = valActFromState[i];
 				}
 			}
 		}
@@ -645,7 +674,8 @@ public class Game {
 	// dependent on the temperature term the Q values will have 
 	// more (lower temperature) or less (higher temperature) influence
 	// on the probabilities of the corresponding actions
-	private Point getActionSoftmax(double temperature,  List<Point> state, Map<String, Map<Point, Double>> Qvalues ) {
+	//private Point getActionSoftmax(double temperature,  List<Point> state, Map<String, Map<Point, Double>> Qvalues ) {
+	private Point getActionSoftmax(double temperature,  List<Point> state, double[][] Qvalues ) {
 		Random rand = new Random();
 		double chance = rand.nextDouble();
 		ArrayList<Double> softmaxProbs = softmaxProbabilities( temperature, state, Qvalues );
@@ -656,25 +686,33 @@ public class Game {
 				break;
 			}
 		}
-		Point move = move( pred.actions[softmaxMove] );
+		//Point move = move( pred.actions[softmaxMove] );
+		Point move = pred.possMoves.get(softmaxMove);
 		return move;
 	}
 	
 	// Function to compute the softmax probabilities for a certain state
-	private ArrayList<Double> softmaxProbabilities( double temperature, List<Point> state,  Map<String, Map<Point, Double>> Qvalues ) {
+//	private ArrayList<Double> softmaxProbabilities( double temperature, List<Point> state,  Map<String, Map<Point, Double>> Qvalues ) {
+	private ArrayList<Double> softmaxProbabilities( double temperature, List<Point> state,  double[][] Qvalues ) {
 		ArrayList<Double> softmaxProbs = new ArrayList<Double>();
-		Map<Point, Double> valActFromState = Qvalues.get( state.toString() );
+		//Map<Point, Double> valActFromState = Qvalues.get( state.toString() );
+		double[] valActFromState = Qvalues[stateIndex.get(state.toString())];
 		double sum = 0;
+		/*
 		for( Point act : valActFromState.keySet() ) {
 			sum += Math.exp( valActFromState.get( act ) / temperature );
+		}*/
+		for(int i = 0; i < valActFromState.length; i++ ){
+			sum += Math.exp( valActFromState[i] / temperature );
 		}
 		
 		// compute each individual softmax probability for actions
-		for( int i = 0; i < valActFromState.entrySet().size(); i++ ) {
-			double actVal = valActFromState.get(move(pred.actions[i]));
-			double prob = Math.exp( actVal / temperature ) / sum;
-			softmaxProbs.add( prob );
+		for(int i = 0; i < valActFromState.length; i++){
+			double actVal = valActFromState[i];
+			double prob = Math.exp(actVal/ temperature) / sum;
+			softmaxProbs.add(prob);
 		}
+
 		// sum cumulatively to get chance boundaries
 		for( int i = 1; i < softmaxProbs.size(); i++ ) {
 			softmaxProbs.set( i, softmaxProbs.get(i-1) + softmaxProbs.get(i) );
@@ -709,13 +747,28 @@ public class Game {
 					validState = true;
 					initState.clear();
 					initState.addAll(posState);
-					for(int i = 0; i < posState.size(); i++){
-						if(Collections.frequency(posState, posState.get(i)) > 1){
-							validState = false;
+					boolean duplicate = true;
+					while( duplicate ){
+						duplicate = false;
+						List<Point> removedDuplicate = new ArrayList<Point>();
+						for(int i = 0; i < posState.size(); i++){
+							removedDuplicate.add((Point) posState.get(i).clone());
+							if(Collections.frequency(posState, posState.get(i)) > 1 && !duplicate ){
+								validState = false;
+								duplicate = true;
+								Point temp = removedDuplicate.get(i);
+								temp.translate((rand.nextInt(3)-1), (rand.nextInt(3)-1));
+								removedDuplicate.set(i, pred.checkDirections(temp));
+							}
 						}
+						if(!duplicate){
+							validState = true;
+						}
+						posState = removedDuplicate;
 					}
 				}
 			}
+			
 			return initState;
 		}
 		
@@ -764,15 +817,18 @@ public class Game {
 			}
 		}
 		// Initialize reduced state space
-		public Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues, int nrPreds) {
-			Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
+		//public Map<String, Map<Point, Double>> initQvaluesMA(double initialQvalues, int nrPreds) {
+		public double[][] initQvaluesMA(double initialQvalues, int nrPreds) {
+			double[][] Qvalues;
+			//Map<String, Map<Point,Double>> Qvalues = new HashMap<String, Map<Point,Double>>();
 			singleStatePoints = new ArrayList<Point>();
-			
 			statePermutations = new ArrayList<List<Point>>();
 			
 			int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
-			Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
-			Map<Point, Double> actionVal = new HashMap<Point, Double>();
+			//Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
+			//Map<Point, Double> actionVal = new HashMap<Point, Double>();
+			double[] actionValterm = new double[5];
+			double[] actionVal = new double[5];
 
 		    if( statesArray.isEmpty() ) {
 				for( int i = 0; i < 11; i++ ) {
@@ -792,7 +848,7 @@ public class Game {
 					callCount++;
 				}
 				
-				addFinalLayer();
+			//	addFinalLayer();
 				
 //				for( int i = 0; i < singleStatePoints.size(); i++ ) {
 //					for( int j = 0; j < singleStatePoints.size(); j++ ) {
@@ -823,37 +879,47 @@ public class Game {
 		    		statePermutations.add(copyState);
 		    	}
 		    }*/
-				
+			Qvalues = new double[statePermutations.size()][5];
+			for(int k = 0; k < pred.actions.length; k++ ){
+				actionValterm[k] = 0.0;
+			}
+			/*
 			for(int k = 0; k < pred.actions.length; k++){
 				actionValterm.put(move(pred.actions[k]), 0.0);
-			}
+			}*/
 			// Random initial Q values
 			if(initialQvalues < 0.0){
+				int stateIndexCount = 0;
 				Random rand = new Random();
 				for( int i = 0; i < statePermutations.size(); i++ ) {
 					List<Point> state = statePermutations.get(i);
-					Map<Point, Double> actionQVal;
+					//Map<Point, Double> actionQVal;
+					double[] actionQVal;
 					for( int j = 0; j < state.size(); j++ ) {
 						if( Collections.frequency( state, state.get(j) ) > 1 
 								|| state.get(j).equals(new Point(0,0) ) ) {
-							actionQVal = new HashMap<Point,Double>(actionValterm);
-							Qvalues.put(state.toString(), actionQVal);
+						//	actionQVal = new HashMap<Point,Double>(actionValterm);
+							actionQVal = (double[]) actionValterm.clone();
+							stateIndex.put(state.toString(), stateIndexCount);
+							Qvalues[stateIndexCount] = (double[]) actionQVal.clone();
+							stateIndexCount++;
 							break;
 						} else {
 							for( int k = 0; k < pred.actions.length; k++ ) {
-								actionVal.put(move(pred.actions[k]), (double) rand.nextInt(21));
+								actionVal[k] = (double) rand.nextInt(21);
 							}
-							actionQVal = new HashMap<Point, Double>(actionVal);
-							Qvalues.put(state.toString(), actionQVal);
+							actionQVal = (double[]) actionVal.clone();
+							stateIndex.put(state.toString(), stateIndexCount);
+							Qvalues[stateIndexCount] = (double[]) actionQVal.clone();
+							stateIndexCount++;
 							break;
-						}
-								
-						
+						}	
 					}
 				}
 			} else{
+				int stateIndexCount = 0;
 				for(int i = 0; i < pred.actions.length; i++){
-					actionVal.put(move(pred.actions[i]), initialQvalues);
+					actionVal[i] = initialQvalues;
 				}
 				for( int i = 0; i < statePermutations.size(); i++ ) {
 						List<Point> state = statePermutations.get(i);
@@ -869,12 +935,16 @@ public class Game {
 							}
 						}
 						if(zeroValue){
-							Qvalues.put(state.toString(), new HashMap<Point, Double>(actionValterm));
+							Qvalues[stateIndexCount] = (double[]) actionValterm.clone();
+							//Qvalues.put(state.toString(), new HashMap<Point, Double>(actionValterm));
 						} else {
+							Qvalues[stateIndexCount] = (double[]) actionVal.clone();
 							//actionQVal = new HashMap<Point, Double>(actionVal);
 							//Qvalues.put(state.toString(), actionQVal);
-							Qvalues.put(state.toString(), new HashMap<Point, Double>(actionVal));
+							//Qvalues.put(state.toString(), new HashMap<Point, Double>(actionVal));
 						}
+						stateIndex.put(state.toString(), stateIndexCount);
+						stateIndexCount++;
 				}
 			}
 			return Qvalues;

@@ -13,6 +13,8 @@ public class Prey {
 		{new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)};
 	public String[] actions = { "WAIT", "NORTH", "EAST", "SOUTH", "WEST" };
 	public double[] probRange = { 0.2, 0.4, 0.6, 0.8, 1 };
+	public List<Point> possMoves = new ArrayList<Point>( Arrays.asList( new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)));
+
 		
 	// init prey either random or static at 5,5
 	public Prey (boolean random) {
