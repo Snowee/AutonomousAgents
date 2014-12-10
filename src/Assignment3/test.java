@@ -18,8 +18,8 @@ public class test {
 		double temperature = 0.5;
 		Game game = new Game(3);
 		//game.initQvaluesMA(-1, 3);
-		game.qlearning(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
-		
+		//game.qlearning(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
+		game.Sarsa(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
 		//game.initQvaluesMA(-1, 3);
 	//	System.out.println(game.statesArray.size());
 		

@@ -223,21 +223,6 @@ public class Game {
 		return loc;
 	}
 	
-	/*
-	// Function for reduced initialization of arbitrary function
-	// ( all states, "west" )
-	public Map<Point, String> reductionInitPolicy() {
-		Map<Point, String> initialPolicy = new HashMap<Point, String>();
-		String move = "WEST";
-		for( int i = -5; i < 6; i++ ) {
-			for( int j = -5; j < 6; j++ ) {
-				Point state = new Point( i, j );
-				initialPolicy.put( state, move );
-			}
-		}
-		return initialPolicy;
-	}*/
-	
 	// Function to print a board with actions on its coordinates
 	public void printBoardActions( Map<Point, String> map, 
 			Point preyLoc ) {
@@ -468,12 +453,165 @@ public class Game {
 	}
 	*/
 	
+	private double computeQvalueSarsa(List<Point> s, Point action, double alpha, 
+			double discountFactor, List<Point> sPrime, Point actionPrime, int reward, double[][] Qvalues){
+		double qval;
+		double oldqval = Qvalues[stateIndex.get(s.toString())][pred.possMoves.indexOf(action)];
+		double sPrimeQval = Qvalues[stateIndex.get(sPrime.toString())][pred.possMoves.indexOf(actionPrime)];
+		qval = oldqval + alpha*(reward + (discountFactor*sPrimeQval) - oldqval);
+		
+		return qval;
+	}
+	
+	// Function implementing the Sarsa algorithm
+		public List<double[]> Sarsa( double alpha, double discountFactor, int nEpisodes, 
+				boolean greedy, double initQval, double epsilon, double temperature ){
+			List<double[]> data = new ArrayList<double[]>();
+			double[] epCount = new double[nEpisodes];
+			double[] preyRew = new double[nEpisodes];
+			double[] predsRew = new double[nEpisodes];
+			List<Double> stepsBump = new ArrayList<Double>();
+			List<Double> epIndBump = new ArrayList<Double>();
+			List<Double> stepsCatch = new ArrayList<Double>();
+			List<Double> epIndCatch = new ArrayList<Double>();
+			double preyCumRew = 0;
+			double predsCumRew = 0;
+			
+			for( int i = 0; i < numPreds; i++ ){
+				QvalList.add(initQvaluesMA(initQval, numPreds));
+			}
+			// Also initialize Qvalues for prey
+			QvalPrey = initQvaluesMA(initQval, numPreds);
+			System.out.println("Initialized Q-values for Predator(s) and Prey");
+			
+			for( int i = 0; i < nEpisodes; i++){
+				List<Point> state = initS(numPreds);
+				System.out.printf("Initial state for episode %d initialized\n", i+1);
+				boolean inTerminalState = false;
+				int stepCounter = 0;
+				List<Point> actions = new ArrayList<Point>();
+				Point actionPrey;
+				if( greedy ){
+					actionPrey = getActionGreedy(epsilon, state, QvalPrey);
+				} else{
+					actionPrey = getActionSoftmax(temperature, state, QvalPrey);
+				}
+				for( int a = 0; a < numPreds; a++ ){
+					Point action = new Point(7,7);
+					if(greedy){
+						action = getActionGreedy(epsilon, state, QvalList.get(a));
+					} else{
+						action = getActionSoftmax(temperature, state, QvalList.get(a));
+					}
+					actions.add(action);
+				}
+				while(!inTerminalState){
+					stepCounter = stepCounter + 1;
+					
+					List<Point> sPrime = new ArrayList<Point>();
+					// Observe reward and state s' after taking action a
+					for( int a = 0; a < numPreds; a++ ){
+						Point dTemp = (Point) state.get(a).clone();
+						dTemp.translate(actionPrey.x, actionPrey.y); // influence of prey move on pred direction vector
+						dTemp.translate(-1*actions.get(a).x, -1*actions.get(a).y); // influence of pred move on own direction vector
+						sPrime.add(pred.checkDirections(dTemp));
+					}
+					int[] rewardsAndTerminal = interactWithEnvRew(sPrime);
+					int rewardPred = rewardsAndTerminal[0];
+					int rewardPrey = rewardsAndTerminal[1];
+					if( rewardsAndTerminal[2] == 1 || rewardsAndTerminal[2] == 2 ){
+						inTerminalState = true;
+						epCount[i] = i;
+						preyCumRew += rewardPrey;
+						predsCumRew += rewardPred;
+						preyRew[i] = preyCumRew;
+						predsRew[i] = predsCumRew;
+						// Predators caught prey
+						if( rewardsAndTerminal[2] == 1){
+							stepsCatch.add((double)stepCounter);
+							epIndCatch.add((double)i);
+						} else{ // Predators bumped into each other
+							stepsBump.add((double) stepCounter);
+							epIndBump.add((double) i);
+						}
+					}
+					// Choose a' from s' using policy derived from Q
+					List<Point> actionsP = new ArrayList<Point>();
+					Point actionPreyP; 
+					if( greedy ){
+						actionPreyP = getActionGreedy(epsilon, state, QvalPrey);
+					} else{
+						actionPreyP = getActionSoftmax(temperature, state, QvalPrey);
+					}
+					for( int a = 0; a < numPreds; a++ ){
+						Point action = new Point(7,7);
+						if(greedy){
+							action = getActionGreedy(epsilon, state, QvalList.get(a));
+						} else{
+							action = getActionSoftmax(temperature, state, QvalList.get(a));
+						}
+						actionsP.add(action);
+					}
+					
+					// Compute Q-value for current state-action s,a for each predator
+					for( int a = 0; a < numPreds; a++ ){
+						double newQval = computeQvalueSarsa(state, actions.get(a), 
+								alpha, discountFactor, sPrime, actionsP.get(a), rewardPred, QvalList.get(a) );
+						QvalList.get(a)[stateIndex.get(state.toString())][pred.possMoves.indexOf(actions.get(a))] = newQval;
+					}
+					// Compute Q-value for current state-action s,a for prey
+					double newQvalPrey = computeQvalueSarsa(state, actionPrey, alpha, 
+							discountFactor, sPrime, actionPreyP, rewardPrey, QvalPrey );
+					QvalPrey[stateIndex.get(state.toString())][prey.possMoves.indexOf(actionPrey)] = newQvalPrey;
+					
+					// State = State'
+					// Joint action = Joint action'
+					state.clear();
+					state.addAll(sPrime);
+					actions.clear();
+					actions.addAll(actionsP);
+				}	
+			}
+			double[] stepsCatchArray = new double[stepsCatch.size()];
+			double[] epIndCatchArray = new double[epIndCatch.size()];
+			double[] stepsBumpArray = new double[stepsBump.size()];
+			double[] epIndBumpArray = new double[epIndBump.size()];
+			for(int i = 0; i < stepsCatch.size(); i++ ){
+				stepsCatchArray[i] = stepsCatch.get(i);
+				epIndCatchArray[i] = epIndCatch.get(i);
+			}
+			for(int i = 0; i < stepsBump.size(); i++ ){
+				stepsBumpArray[i] = stepsBump.get(i);
+				epIndBumpArray[i] = epIndBump.get(i);
+			}
+			data.add(epCount);
+			data.add(preyRew);
+			data.add(predsRew);
+			data.add(epIndCatchArray);
+			data.add(stepsCatchArray);
+			data.add(epIndBumpArray);
+			data.add(stepsBumpArray);
+			
+			return data;
+		}
+		
+	
 	// Function implementing the Q-learning algorithm
-	public void qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
+	public List<double[]> qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
 			double initQval, double epsilon, double temperature){
+		List<double[]> data = new ArrayList<double[]>();
+		double[] epCount = new double[nEpisodes];
+		double[] preyRew = new double[nEpisodes];
+		double[] predsRew = new double[nEpisodes];
+		List<Double> stepsBump = new ArrayList<Double>();
+		List<Double> epIndBump = new ArrayList<Double>();
+		List<Double> stepsCatch = new ArrayList<Double>();
+		List<Double> epIndCatch = new ArrayList<Double>();
+		double preyCumRew = 0;
+		double predsCumRew = 0;
+		
 		System.out.println("Initializing Q-values for Predator(s) and Prey....");
 		for( int i = 0; i < numPreds; i++ ){
-			//System.out.println(i);
 			QvalList.add(initQvaluesMA(initQval, numPreds));
 		}
 		// Also initialize Qvalues for prey
@@ -483,8 +621,6 @@ public class Game {
 		for( int i = 0; i < nEpisodes; i++){
 			List<Point> state = initS(numPreds);
 			System.out.printf("Initial state for episode %d initialized\n", i+1);
-			//System.out.println(state);
-			//String sPrey = computePreyState(sPreds);
 			boolean inTerminalState = false;
 			int stepCounter = 0;
 			while(!inTerminalState){
@@ -496,8 +632,6 @@ public class Game {
 				} else{
 					actionPrey = getActionSoftmax(temperature, state, QvalPrey);
 				}
-			//	System.out.println("----");
-			//	System.out.println(prey.actions[prey.possMoves.indexOf(actionPrey)]);
 				List<Point> sPrime = new ArrayList<Point>();
 				for( int a = 0; a < numPreds; a++ ){
 					Point action = new Point(7,7);
@@ -506,19 +640,30 @@ public class Game {
 					} else{
 						action = getActionSoftmax(temperature, state, QvalList.get(a));
 					}
-				//	System.out.println(pred.actions[pred.possMoves.indexOf(action)]);
 					actions.add(action);
 					Point dTemp = (Point) state.get(a).clone();
 					dTemp.translate(actionPrey.x, actionPrey.y); // influence of prey move on pred direction vector
 					dTemp.translate(-1*action.x, -1*action.y); // influence of pred move on own direction vector
 					sPrime.add(pred.checkDirections(dTemp));
 				}
-			//	System.out.println("-------");
 				int[] rewardsAndTerminal = interactWithEnvRew(sPrime);
 				int rewardPred = rewardsAndTerminal[0];
 				int rewardPrey = rewardsAndTerminal[1];
-				if( rewardsAndTerminal[2] == 1 ){
+				if( rewardsAndTerminal[2] == 1 || rewardsAndTerminal[2] == 2 ){
 					inTerminalState = true;
+					epCount[i] = i;
+					preyCumRew += rewardPrey;
+					predsCumRew += rewardPred;
+					preyRew[i] = preyCumRew;
+					predsRew[i] = predsCumRew;
+					// Predators caught prey
+					if( rewardsAndTerminal[2] == 1){
+						stepsCatch.add((double)stepCounter);
+						epIndCatch.add((double)i);
+					} else{ // Predators bumped into each other
+						stepsBump.add((double) stepCounter);
+						epIndBump.add((double) i);
+					}
 				}
 				
 				// Compute Q-value for current state-action s,a for each predator
@@ -526,30 +671,45 @@ public class Game {
 					double newQval = computeQvalueQL(state, actions.get(a), 
 							alpha, discountFactor, sPrime, rewardPred, QvalList.get(a) );
 					QvalList.get(a)[stateIndex.get(state.toString())][pred.possMoves.indexOf(actions.get(a))] = newQval;
-					//QvalList.get(a).get(state.toString()).put(actions.get(a), newQval);
 				}
 				// Compute Q-value for current state-action s,a for prey
 				double newQvalPrey = computeQvalueQL(state, actionPrey, alpha, 
 						discountFactor, sPrime, rewardPrey, QvalPrey );
-				//QvalPrey.get(state.toString()).put(actionPrey, newQvalPrey);
 				QvalPrey[stateIndex.get(state.toString())][prey.possMoves.indexOf(actionPrey)] = newQvalPrey;
 				
 				// State = State'
 				state.clear();
 				state.addAll(sPrime);
 			}
-			System.out.println(stepCounter);
+			
+			//System.out.println(stepCounter);
 		}
-		/*
-		printBoardQ(Qvalues, new Point(5,5));
-		printboardQActions(Qvalues, new Point(5,5));
-		printboardQmax(Qvalues, new Point(5,5));
-		*/
+		double[] stepsCatchArray = new double[stepsCatch.size()];
+		double[] epIndCatchArray = new double[epIndCatch.size()];
+		double[] stepsBumpArray = new double[stepsBump.size()];
+		double[] epIndBumpArray = new double[epIndBump.size()];
+		for(int i = 0; i < stepsCatch.size(); i++ ){
+			stepsCatchArray[i] = stepsCatch.get(i);
+			epIndCatchArray[i] = epIndCatch.get(i);
+		}
+		for(int i = 0; i < stepsBump.size(); i++ ){
+			stepsBumpArray[i] = stepsBump.get(i);
+			epIndBumpArray[i] = epIndBump.get(i);
+		}
+		data.add(epCount);
+		data.add(preyRew);
+		data.add(predsRew);
+		data.add(epIndCatchArray);
+		data.add(stepsCatchArray);
+		data.add(epIndBumpArray);
+		data.add(stepsBumpArray);
+		return data;
 	}
 	
 	private int[] interactWithEnvRew( List<Point> state){
 		int[] rewardsAndTerminal = new int[3];
 		boolean terminalSt = false;
+		boolean bump = false;
 		int rewardPreds = 0;
 		int rewardPrey = 0;
 		
@@ -558,6 +718,7 @@ public class Game {
 			// the prey gets away even when it was caught by another agent
 			if( Collections.frequency(state, state.get(i)) > 1 ){
 				terminalSt = true;
+				bump = true;
 				rewardPreds = -10;
 				rewardPrey = 10;
 				break;
@@ -570,7 +731,11 @@ public class Game {
 		}
 		
 		if(terminalSt){
-			rewardsAndTerminal[2] = 1;
+			if(!bump){ // Predator(s) caught prey
+				rewardsAndTerminal[2] = 1;
+			} else{
+				rewardsAndTerminal[2] = 2;
+			}
 		}
 		
 		rewardsAndTerminal[0] = rewardPreds;
@@ -609,33 +774,16 @@ public class Game {
 	}*/
 	
 	// Compute Q-value in Qlearning for state s (for predator)
-	//private double computeQvalueQL(List<Point> s, Point action, double alpha, 
-	//		double discountFactor, List<Point> sPrime, int reward, Map<String, Map<Point, Double>> Qvalues){
 	private double computeQvalueQL(List<Point> s, Point action, double alpha, 
 			double discountFactor, List<Point> sPrime, int reward, double[][] Qvalues){
 		double oldqval = Qvalues[stateIndex.get(s.toString())][pred.possMoves.indexOf(action)];
-		//double oldqval = Qvalues.get(s.toString())[pred.possibleMovesPoint.]
-		//double oldqval = Qvalues.get(s.toString()).get(action);
-	//	System.out.println("----");
-	//	System.out.println(sPrime);
-		//System.out.println(s);
-		//System.out.println(action);
-	//	System.out.println(statesArray.contains(sPrime));
-	//	System.out.println("----");
 		double[] sPrimeActVal = Qvalues[stateIndex.get(sPrime.toString())];
-	//	Set<Point> sPrimeActions = Qvalues.get(sPrime.toString()).keySet();
 		double maxPrimeQval = 0;
 		for(int i = 0; i < sPrimeActVal.length; i++){
 			if(sPrimeActVal[i] >= maxPrimeQval){
 				maxPrimeQval = sPrimeActVal[i];
 			}
 		}
-		/*
-		for(Point actionPrime : sPrimeActions){
-			if(Qvalues.get(sPrime.toString()).get(actionPrime) >= maxPrimeQval){
-				maxPrimeQval = Qvalues.get(sPrime.toString()).get(actionPrime);
-			}
-		}*/
 		double qval = oldqval + alpha*(reward + 
 				(discountFactor*maxPrimeQval) - oldqval);
 		
@@ -692,16 +840,10 @@ public class Game {
 	}
 	
 	// Function to compute the softmax probabilities for a certain state
-//	private ArrayList<Double> softmaxProbabilities( double temperature, List<Point> state,  Map<String, Map<Point, Double>> Qvalues ) {
 	private ArrayList<Double> softmaxProbabilities( double temperature, List<Point> state,  double[][] Qvalues ) {
 		ArrayList<Double> softmaxProbs = new ArrayList<Double>();
-		//Map<Point, Double> valActFromState = Qvalues.get( state.toString() );
 		double[] valActFromState = Qvalues[stateIndex.get(state.toString())];
 		double sum = 0;
-		/*
-		for( Point act : valActFromState.keySet() ) {
-			sum += Math.exp( valActFromState.get( act ) / temperature );
-		}*/
 		for(int i = 0; i < valActFromState.length; i++ ){
 			sum += Math.exp( valActFromState[i] / temperature );
 		}
@@ -719,21 +861,6 @@ public class Game {
 		}
 		return softmaxProbs;		
 	}
-	
-	/*
-	// get an arbitrary starting state, that is not the terminal state
-	private Point initS(){
-		Point initialState = new Point();
-		boolean nonTerminalInit = false;
-		while( !nonTerminalInit ) {
-			Random rand = new Random();
-			initialState = statesArray[rand.nextInt(statesArray.length)];
-			if( !initialState.equals(new Point(0,0) )) {
-				nonTerminalInit = true;
-			}
-		}
-		return initialState;
-	}*/
 	
 	// get a state (=list of arbitrary starting positions for preds), which does
 	// not equal the terminal state.
@@ -772,7 +899,6 @@ public class Game {
 			return initState;
 		}
 		
-		//public void addToPermSet( int layerNr, int callCount ) {
 		public void addToPermSet(int nAg, int callCount ){
 			int indexPermList = 0;
 			while(indexPermList < Math.pow(singleStatePoints.size(), nAg)){
@@ -825,8 +951,6 @@ public class Game {
 			statePermutations = new ArrayList<List<Point>>();
 			
 			int[] directionValues = { -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
-			//Map<Point, Double> actionValterm = new HashMap<Point, Double>(); // for terminal state
-			//Map<Point, Double> actionVal = new HashMap<Point, Double>();
 			double[] actionValterm = new double[5];
 			double[] actionVal = new double[5];
 
@@ -949,25 +1073,4 @@ public class Game {
 			}
 			return Qvalues;
 		}
-	/*
-	// Function to print the number of times a state is updated
-	public void printStateCount( Map<Point, Integer> map, Point preyLoc ) {
-		int[][] board = new int[11][11];
-		for( Map.Entry<Point, Integer> entry : map.entrySet() ) {
-			Point state = entry.getKey();
-			int action = map.get( state );
-			Point newState = (Point) preyLoc.clone();
-			newState.x -= state.x;
-			newState.y -= state.y;
-			newState = checkLoc( newState );
-			board[newState.y][newState.x] = action;
-		}
-		for( int[] row : board ) {
-	        for( int r : row ) {
-	        	System.out.printf( "%d\t", r );
-	        }
-	        System.out.println();
-	    }
-		System.out.println();
-	}*/
 }
