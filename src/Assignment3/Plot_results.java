@@ -90,7 +90,7 @@ public class Plot_results {
     	 	NumberAxis yAxis = new NumberAxis();
     	 	NumberAxis xAxis = new NumberAxis();
         	yAxis.setTickUnit(new NumberTickUnit(yAxisTicks));
-        	yAxis.setRange(-1*yAxisRange, yAxisRange);
+        	yAxis.setRange(0, yAxisRange);
         	yAxis.setLabel(y_title);
         	yAxis.setLabelFont(new Font("Dialog", Font.PLAIN, 15));
         	xAxis.setLabel(x_title);

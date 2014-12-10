@@ -476,6 +476,10 @@ public class Game {
 			List<Double> epIndCatch = new ArrayList<Double>();
 			double preyCumRew = 0;
 			double predsCumRew = 0;
+			double[] predWins = new double[nEpisodes];
+			double[] preyWins = new double[nEpisodes];
+			double predWinsCum = 0;
+			double preyWinsCum = 0;
 			
 			for( int i = 0; i < numPreds; i++ ){
 				QvalList.add(initQvaluesMA(initQval, numPreds));
@@ -500,9 +504,9 @@ public class Game {
 				List<Point> actions = new ArrayList<Point>();
 				Point actionPrey;
 				if( greedy ){
-					actionPrey = getActionGreedy(epsilon, state, QvalPrey);
+					actionPrey = getActionGreedyPrey(epsilon, state, QvalPrey);
 				} else{
-					actionPrey = getActionSoftmax(temperature, state, QvalPrey);
+					actionPrey = getActionSoftmaxPrey(temperature, state, QvalPrey);
 				}
 				for( int a = 0; a < numPreds; a++ ){
 					Point action = new Point(7,7);
@@ -536,9 +540,15 @@ public class Game {
 						predsRew[i] = predsCumRew;
 						// Predators caught prey
 						if( rewardsAndTerminal[2] == 1){
+							predWinsCum++;
+							predWins[i] = predWinsCum;
+							preyWins[i] = preyWinsCum;
 							stepsCatch.add((double)stepCounter);
 							epIndCatch.add((double)i);
 						} else{ // Predators bumped into each other
+							preyWinsCum++;
+							predWins[i] = predWinsCum;
+							preyWins[i] = preyWinsCum;
 							stepsBump.add((double) stepCounter);
 							epIndBump.add((double) i);
 						}
@@ -547,9 +557,9 @@ public class Game {
 					List<Point> actionsP = new ArrayList<Point>();
 					Point actionPreyP; 
 					if( greedy ){
-						actionPreyP = getActionGreedy(epsilon, state, QvalPrey);
+						actionPreyP = getActionGreedyPrey(epsilon, state, QvalPrey);
 					} else{
-						actionPreyP = getActionSoftmax(temperature, state, QvalPrey);
+						actionPreyP = getActionSoftmaxPrey(temperature, state, QvalPrey);
 					}
 					for( int a = 0; a < numPreds; a++ ){
 						Point action = new Point(7,7);
@@ -595,6 +605,8 @@ public class Game {
 			data.add(epCount);
 			data.add(preyRew);
 			data.add(predsRew);
+			data.add(preyWins);
+			data.add(predWins);
 			data.add(epIndCatchArray);
 			data.add(stepsCatchArray);
 			data.add(epIndBumpArray);
@@ -604,6 +616,35 @@ public class Game {
 		}
 		
 	
+	private Point getActionSoftmaxPrey(double temperature,
+				List<Point> state, double[][] Qvalues) {
+		Random rand = new Random();
+		Point action = new Point();
+		double trip = rand.nextDouble();
+		// Prey trips, so action = wait
+		if( trip < 0.2 ){
+			action = new Point(0,0);
+		} else{
+			action = getActionSoftmax(temperature, state, Qvalues);
+		}
+		return action;
+	}
+
+	private Point getActionGreedyPrey(double epsilon, List<Point> state,
+				double[][] Qvalues) {
+		Random rand = new Random();
+		Point action = new Point();
+		double trip = rand.nextDouble();
+		// Prey trips, so action = wait
+		if( trip < 0.2 ){
+			action = new Point(0,0);
+		} else{
+			action = getActionGreedy(epsilon, state, Qvalues);
+		}
+		
+		return action;
+	}
+
 	// Function implementing the Q-learning algorithm
 	public List<double[]> qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
 			double initQval, double epsilon, double temperature, boolean randomInitState){
@@ -611,6 +652,10 @@ public class Game {
 		double[] epCount = new double[nEpisodes];
 		double[] preyRew = new double[nEpisodes];
 		double[] predsRew = new double[nEpisodes];
+		double[] predWins = new double[nEpisodes];
+		double[] preyWins = new double[nEpisodes];
+		double predWinsCum = 0;
+		double preyWinsCum = 0;
 		List<Double> stepsBump = new ArrayList<Double>();
 		List<Double> epIndBump = new ArrayList<Double>();
 		List<Double> stepsCatch = new ArrayList<Double>();
@@ -644,9 +689,9 @@ public class Game {
 				List<Point> actions = new ArrayList<Point>();
 				Point actionPrey;
 				if( greedy ){
-					actionPrey = getActionGreedy(epsilon, state, QvalPrey);
+					actionPrey = getActionGreedyPrey(epsilon, state, QvalPrey);
 				} else{
-					actionPrey = getActionSoftmax(temperature, state, QvalPrey);
+					actionPrey = getActionSoftmaxPrey(temperature, state, QvalPrey);
 				}
 				List<Point> sPrime = new ArrayList<Point>();
 				for( int a = 0; a < numPreds; a++ ){
@@ -674,9 +719,15 @@ public class Game {
 					predsRew[i] = predsCumRew;
 					// Predators caught prey
 					if( rewardsAndTerminal[2] == 1){
+						predWinsCum++;
+						predWins[i] = predWinsCum;
+						preyWins[i] = preyWinsCum;
 						stepsCatch.add((double)stepCounter);
 						epIndCatch.add((double)i);
 					} else{ // Predators bumped into each other
+						preyWinsCum++;
+						predWins[i] = predWinsCum;
+						preyWins[i] = preyWinsCum;
 						stepsBump.add((double) stepCounter);
 						epIndBump.add((double) i);
 					}
@@ -715,6 +766,8 @@ public class Game {
 		data.add(epCount);
 		data.add(preyRew);
 		data.add(predsRew);
+		data.add(preyWins);
+		data.add(predWins);
 		data.add(epIndCatchArray);
 		data.add(stepsCatchArray);
 		data.add(epIndBumpArray);
