@@ -8,6 +8,7 @@ import java.util.List;
 public class test {
 
 	public static void main(String[] args) {
+		/*
 		double alpha = 0.1;
 		double discountFactor = 0.8;
 		int nEpisodes = 1;
@@ -21,6 +22,7 @@ public class test {
 		//game.initQvaluesMA(-1, 3);
 		//game.qlearning(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
 		game.Sarsa(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature, randomInitState);
+		*/
 		//game.initQvaluesMA(-1, 3);
 	//	System.out.println(game.statesArray.size());
 		

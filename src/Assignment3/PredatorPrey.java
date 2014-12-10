@@ -8,9 +8,9 @@ public class PredatorPrey {
 
 	public static void main( String[] args ) throws IOException {
 		//Algorithm to run
-		//String algorithm = "Qlearning";
+		String algorithm = "Qlearning";
 		//String algorithm = "Minimax";
-		String algorithm = "Sarsa";
+		//String algorithm = "Sarsa";
 		
 		double[] empty = {};
 
@@ -23,7 +23,7 @@ public class PredatorPrey {
 		//Independent Q-learning parameters
 		boolean loopTemperature = false;
 		double[] temperature = {0.5, 5, 50, 500};
-		boolean greedy = false;
+		boolean greedy = true;
 		boolean loopEpsilon = false;
 		double[] epsilon = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
 
@@ -66,14 +66,18 @@ public class PredatorPrey {
 		List<double[]> plotData = new ArrayList<double[]>();
 		//Standard parameter values
 		double alpha = 0.1;
-		double initialQvalues = 1.0;
+		double alphaPrey = 0.1;
+		double initialQvalues = 15.0;
 		double initialV = 1.0;
 		double explore = 0.2;
 		double discountFactor = 0.8; 
+		double discountFactorPrey = 0.8;
 		double epsilon = 0.1;
+		double epsilonPrey = 0.1;
 		double temperature = 0.5;
-		int nEpisodes = 1000;
-		int nPreds = 2;
+		double temperaturePrey = 0.5;
+		int nEpisodes = 200000;
+		int nPreds = 3;
 		boolean randomInitState = false;
 		
 		String plotTitle = "Plot title here";
@@ -91,6 +95,7 @@ public class PredatorPrey {
 
 		//Checken welke data uit welke index komt van plotData
 		switch( variableName ){
+		/*
 		case "Explore":
 			for( int i = 0; i < varValues.length; i++ ){
 				Game game = new Game( nPreds );
@@ -187,8 +192,8 @@ public class PredatorPrey {
 			if( algorithm.equals("Sarsa")){
 				for( int i = 0; i < varValues.length; i++ ){
 					Game game = new Game( nPreds );
-					plotData = game.Sarsa(alpha, varValues[i], nEpisodes, greedy,
-							initialQvalues, epsilon, temperature, randomInitState);
+					plotData = game.Sarsa(alpha, alphaPrey, discountFactor, discountFactorPrey, nEpisodes, greedy,
+							initialQvalues, epsilon, epsilonPrey, temperature, temperaturePrey, randomInitState);
 					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
@@ -197,8 +202,8 @@ public class PredatorPrey {
 			else if( algorithm.equals("Qlearning")){
 				for( int i = 0; i < varValues.length; i++ ){
 					Game game = new Game( nPreds );
-					plotData = game.qlearning( alpha, varValues[i], nEpisodes, greedy,
-							initialQvalues, epsilon, temperature, randomInitState);
+					plotData = game.qlearning( alpha, alphaPrey, discountFactor, discountFactorPrey, nEpisodes, greedy,
+							initialQvalues, epsilon, epsilonPrey, temperature, temperaturePrey, randomInitState);
 					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
@@ -218,8 +223,8 @@ public class PredatorPrey {
 			if( algorithm.equals("Sarsa")){
 				for( int i = 0; i < varValues.length; i++ ){
 					Game game = new Game( nPreds );
-					plotData = game.Sarsa( alpha, discountFactor, nEpisodes, greedy,
-							varValues[i], epsilon, temperature, randomInitState);
+					plotData = game.Sarsa( alpha, alphaPrey, discountFactor, discountFactorPrey, nEpisodes, greedy,
+							initialQvalues, epsilon, epsilonPrey, temperature, temperaturePrey, randomInitState);
 					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
@@ -228,8 +233,8 @@ public class PredatorPrey {
 			else if( algorithm.equals("Qlearning")){
 				for( int i = 0; i < varValues.length; i++ ){
 					Game game = new Game( nPreds );
-					plotData = game.qlearning( alpha, discountFactor, nEpisodes, greedy,
-							varValues[i], epsilon, temperature, randomInitState);
+					plotData = game.qlearning( alpha, alphaPrey, discountFactor, discountFactorPrey, nEpisodes, greedy,
+							initialQvalues, epsilon, epsilonPrey, temperature, temperaturePrey, randomInitState);
 					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
@@ -244,12 +249,12 @@ public class PredatorPrey {
 					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
 				}
-			}
+			}*/
 		case "Standard":
 			if( algorithm.equals("Sarsa")){
 					Game game = new Game( nPreds );
-					plotData = game.Sarsa( alpha, discountFactor, nEpisodes, greedy,
-							initialQvalues, epsilon, temperature, randomInitState);
+					plotData = game.Sarsa( alpha, alphaPrey, discountFactor, discountFactorPrey, nEpisodes, greedy,
+							initialQvalues, epsilon, epsilonPrey, temperature, temperaturePrey, randomInitState);
 					//plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					//plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.add_data_series(plotData.get(0), plotData.get(3), labelLine1);
@@ -258,8 +263,8 @@ public class PredatorPrey {
 			}
 			else if( algorithm.equals("Qlearning")){
 					Game game = new Game( nPreds );
-					plotData = game.qlearning( alpha, discountFactor, nEpisodes, greedy,
-							initialQvalues, epsilon, temperature, randomInitState);
+					plotData = game.qlearning( alpha, alphaPrey, discountFactor, discountFactorPrey, nEpisodes, greedy,
+							initialQvalues, epsilon, epsilonPrey, temperature, temperaturePrey, randomInitState);
 					//plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					//plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.add_data_series(plotData.get(0), plotData.get(3), labelLine1);
@@ -273,8 +278,7 @@ public class PredatorPrey {
 					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
 					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
 					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
-			}
-			
+			}	
 		}
 	}
 }

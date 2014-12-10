@@ -464,8 +464,8 @@ public class Game {
 	}
 	
 	// Function implementing the Sarsa algorithm
-		public List<double[]> Sarsa( double alpha, double discountFactor, int nEpisodes, 
-				boolean greedy, double initQval, double epsilon, double temperature, boolean randomInitState ){
+		public List<double[]> Sarsa(double alpha, double alphaPrey, double discountFactor, double discountFactorPrey, int nEpisodes, boolean greedy,
+				double initQval, double epsilon, double epsilonPrey, double temperature, double temperaturePrey, boolean randomInitState){
 			List<double[]> data = new ArrayList<double[]>();
 			double[] epCount = new double[nEpisodes];
 			double[] preyRew = new double[nEpisodes];
@@ -504,9 +504,9 @@ public class Game {
 				List<Point> actions = new ArrayList<Point>();
 				Point actionPrey;
 				if( greedy ){
-					actionPrey = getActionGreedyPrey(epsilon, state, QvalPrey);
+					actionPrey = getActionGreedyPrey(epsilonPrey, state, QvalPrey);
 				} else{
-					actionPrey = getActionSoftmaxPrey(temperature, state, QvalPrey);
+					actionPrey = getActionSoftmaxPrey(temperaturePrey, state, QvalPrey);
 				}
 				for( int a = 0; a < numPreds; a++ ){
 					Point action = new Point(7,7);
@@ -557,9 +557,9 @@ public class Game {
 					List<Point> actionsP = new ArrayList<Point>();
 					Point actionPreyP; 
 					if( greedy ){
-						actionPreyP = getActionGreedyPrey(epsilon, state, QvalPrey);
+						actionPreyP = getActionGreedyPrey(epsilonPrey, state, QvalPrey);
 					} else{
-						actionPreyP = getActionSoftmaxPrey(temperature, state, QvalPrey);
+						actionPreyP = getActionSoftmaxPrey(temperaturePrey, state, QvalPrey);
 					}
 					for( int a = 0; a < numPreds; a++ ){
 						Point action = new Point(7,7);
@@ -578,8 +578,8 @@ public class Game {
 						QvalList.get(a)[stateIndex.get(state.toString())][pred.possMoves.indexOf(actions.get(a))] = newQval;
 					}
 					// Compute Q-value for current state-action s,a for prey
-					double newQvalPrey = computeQvalueSarsa(state, actionPrey, alpha, 
-							discountFactor, sPrime, actionPreyP, rewardPrey, QvalPrey );
+					double newQvalPrey = computeQvalueSarsa(state, actionPrey, alphaPrey, 
+							discountFactorPrey, sPrime, actionPreyP, rewardPrey, QvalPrey );
 					QvalPrey[stateIndex.get(state.toString())][prey.possMoves.indexOf(actionPrey)] = newQvalPrey;
 					
 					// State = State'
@@ -646,8 +646,8 @@ public class Game {
 	}
 
 	// Function implementing the Q-learning algorithm
-	public List<double[]> qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
-			double initQval, double epsilon, double temperature, boolean randomInitState){
+	public List<double[]> qlearning(double alpha, double alphaPrey, double discountFactor, double discountFactorPrey, int nEpisodes, boolean greedy,
+			double initQval, double epsilon, double epsilonPrey, double temperature, double temperaturePrey, boolean randomInitState){
 		List<double[]> data = new ArrayList<double[]>();
 		double[] epCount = new double[nEpisodes];
 		double[] preyRew = new double[nEpisodes];
@@ -689,9 +689,9 @@ public class Game {
 				List<Point> actions = new ArrayList<Point>();
 				Point actionPrey;
 				if( greedy ){
-					actionPrey = getActionGreedyPrey(epsilon, state, QvalPrey);
+					actionPrey = getActionGreedyPrey(epsilonPrey, state, QvalPrey);
 				} else{
-					actionPrey = getActionSoftmaxPrey(temperature, state, QvalPrey);
+					actionPrey = getActionSoftmaxPrey(temperaturePrey, state, QvalPrey);
 				}
 				List<Point> sPrime = new ArrayList<Point>();
 				for( int a = 0; a < numPreds; a++ ){
@@ -740,8 +740,8 @@ public class Game {
 					QvalList.get(a)[stateIndex.get(state.toString())][pred.possMoves.indexOf(actions.get(a))] = newQval;
 				}
 				// Compute Q-value for current state-action s,a for prey
-				double newQvalPrey = computeQvalueQL(state, actionPrey, alpha, 
-						discountFactor, sPrime, rewardPrey, QvalPrey );
+				double newQvalPrey = computeQvalueQL(state, actionPrey, alphaPrey, 
+						discountFactorPrey, sPrime, rewardPrey, QvalPrey );
 				QvalPrey[stateIndex.get(state.toString())][prey.possMoves.indexOf(actionPrey)] = newQvalPrey;
 				
 				// State = State'
