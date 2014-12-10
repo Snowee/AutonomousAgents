@@ -465,7 +465,7 @@ public class Game {
 	
 	// Function implementing the Sarsa algorithm
 		public List<double[]> Sarsa( double alpha, double discountFactor, int nEpisodes, 
-				boolean greedy, double initQval, double epsilon, double temperature ){
+				boolean greedy, double initQval, double epsilon, double temperature, boolean randomInitState ){
 			List<double[]> data = new ArrayList<double[]>();
 			double[] epCount = new double[nEpisodes];
 			double[] preyRew = new double[nEpisodes];
@@ -485,7 +485,15 @@ public class Game {
 			System.out.println("Initialized Q-values for Predator(s) and Prey");
 			
 			for( int i = 0; i < nEpisodes; i++){
-				List<Point> state = initS(numPreds);
+				List<Point> state;
+				if(randomInitState){
+					state = initS(numPreds);
+				} else{
+					state = new ArrayList<Point>();
+					for( int p = 0; p < numPreds; p++ ){
+						state.add( (Point) pred.predStartLocSt[p].clone());
+					}
+				}
 				System.out.printf("Initial state for episode %d initialized\n", i+1);
 				boolean inTerminalState = false;
 				int stepCounter = 0;
@@ -598,7 +606,7 @@ public class Game {
 	
 	// Function implementing the Q-learning algorithm
 	public List<double[]> qlearning(double alpha, double discountFactor, int nEpisodes, boolean greedy,
-			double initQval, double epsilon, double temperature){
+			double initQval, double epsilon, double temperature, boolean randomInitState){
 		List<double[]> data = new ArrayList<double[]>();
 		double[] epCount = new double[nEpisodes];
 		double[] preyRew = new double[nEpisodes];
@@ -619,7 +627,15 @@ public class Game {
 		System.out.println("Initialized Q-values for Predator(s) and Prey");
 		
 		for( int i = 0; i < nEpisodes; i++){
-			List<Point> state = initS(numPreds);
+			List<Point> state;
+			if(randomInitState){
+				state = initS(numPreds);
+			} else{
+				state = new ArrayList<Point>();
+				for( int p = 0; p < numPreds; p++ ){
+					state.add( (Point) pred.predStartLocSt[p].clone());
+				}
+			}
 			System.out.printf("Initial state for episode %d initialized\n", i+1);
 			boolean inTerminalState = false;
 			int stepCounter = 0;

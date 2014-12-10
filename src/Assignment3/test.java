@@ -17,9 +17,10 @@ public class test {
 		double epsilon = 0.1;
 		double temperature = 0.5;
 		Game game = new Game(3);
+		boolean randomInitState = false;
 		//game.initQvaluesMA(-1, 3);
 		//game.qlearning(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
-		game.Sarsa(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature);
+		game.Sarsa(alpha, discountFactor, nEpisodes, greedy, initQval, epsilon, temperature, randomInitState);
 		//game.initQvaluesMA(-1, 3);
 	//	System.out.println(game.statesArray.size());
 		

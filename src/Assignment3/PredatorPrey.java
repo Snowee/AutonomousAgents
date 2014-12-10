@@ -1,92 +1,274 @@
 package Assignment3;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class PredatorPrey {
-/*
-	public static void main( String[] args ) {
-		double discountFactor = 0.9;
-		double learningRate = 0.1;
+
+	public static void main( String[] args ) throws IOException {
+		//Algorithm to run
+		String algorithm = "Qlearning";
+		//String algorithm = "Minimax";
+		//String algorithm = "Sarsa";
+		
+		double[] empty = {};
+
+		//Minimax parameters
+		boolean loopExplore = false;
+		double[] explore = {0.2, 0.4, 0.6, 0.8};
+		boolean loopInitV = false;
+		double[] initV = {1.0, 5.0, 10.0}; //Nodig?
+
+		//Independent Q-learning parameters
+		boolean loopTemperature = false;
+		double[] temperature = {0.5, 5, 50, 500};
+		boolean greedy = false;
+		boolean loopEpsilon = false;
+		double[] epsilon = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+
+		//Minimax and independent Q-learning parameters
+		boolean loopInitQvals = false;
+		double[] initQvals = {0.0, 5.0, 10.0, 15.0, 20.0};
+		boolean loopDiscount = false;
+		double[] discount = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+		boolean loopAlpha = false;
+		double[] alpha = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+
+		if( loopExplore ){
+			printData( algorithm, "Explore", explore, greedy );
+		}
+		else if( loopEpsilon ){
+			printData( algorithm, "Epsilon", epsilon, greedy );
+		}
+		else if( loopInitV ){
+			printData( algorithm, "Initial V values", initV, greedy );
+		}
+		else if( loopTemperature ){
+			printData( algorithm, "Temperature", temperature, greedy );			
+		}
+		else if( loopInitQvals ){
+			printData( algorithm, "Init Q values", initQvals, greedy );
+		}
+		else if( loopDiscount ){
+			printData( algorithm, "Discount factor", discount, greedy );
+		}
+		else if( loopAlpha ){
+			printData( algorithm, "Alpha", alpha, greedy );
+		}
+		else{
+			System.out.println("Running with standard variables");
+			printData( algorithm, "Standard", empty, greedy );
+		}
+	}
+
+	public static void printData( String algorithm, String variableName, double[] varValues, boolean greedy) throws IOException{
+		List<double[]> plotData = new ArrayList<double[]>();
+		//Standard parameter values
+		double alpha = 0.1;
+		double initialQvalues = 1.0;
+		double initialV = 1.0;
+		double explore = 0.2;
+		double discountFactor = 0.8; 
 		double epsilon = 0.1;
 		double temperature = 0.5;
-		double initQvalue = 15.0;
-		int nEpisodes = 10000;
-		// boolean if the game is run
-		boolean playGame = false;
-		// Booleans determining which algorithms to run
-		// Turn only one on with true
-		boolean qlearning = false;
-		boolean sarsa = false;
-		boolean offPolMC = true;
-		boolean onPolMC = false;
-		boolean useGreedy = false;
+		int nEpisodes = 500;
+		int nPreds = 2;
+		boolean randomInitState = false;
 		
+		String plotTitle = "Plot title here";
+		String xAxisLabel = "Number of episodes";
+		String yAxisLabel = "Cumulated reward";
+		String labelLine1 = "Prey";
+		String labelLine2 = "Predator";
+		String fileName = "test.png";
+		int imageWidth = 500;
+		int imageHeight = 500;
+		int yAxisRange = nEpisodes * 10;
+		int yAxisTicks = nEpisodes;		
 
+		Plot_results plot = new Plot_results( plotTitle, xAxisLabel, yAxisLabel );
 
-		if( !playGame ) {
-			Predator pred = new Predator(false);
-			Prey prey = new Prey(false);
-			Game game = new Game( pred, prey );
-			// run the algorithm that is turned on with the booleans above
-			if( sarsa ) {
-				game.Sarsa( discountFactor, learningRate, nEpisodes, useGreedy, epsilon, temperature );
-			} else {
-				if( qlearning ) {
-					game.qlearning( learningRate, discountFactor, nEpisodes, useGreedy, initQvalue, epsilon, temperature );
-				} else {
-					if( offPolMC ) {
-						game.offPolicyMonteCarlo( initQvalue, discountFactor, nEpisodes );
-					} else {
-						if( onPolMC ) {
-							game.onPolicyMC(epsilon, discountFactor, nEpisodes);
-						}
-					}
+		//Checken welke data uit welke index komt van plotData
+		switch( variableName ){
+		case "Explore":
+			for( int i = 0; i < varValues.length; i++ ){
+				Game game = new Game( nPreds );
+				//plotData = game.miniMaxQlearning(initialQvalues, initialV, alpha, varValues[i], gamma);
+				//plot.add_data_series(xData, yData, label);
+				plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);//prey reward
+				plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);//predator reward
+				plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+			}
+		case "Initial V values":
+			for( int i = 0; i < varValues.length; i++ ){
+				Game game = new Game( nPreds );
+				//plotData = game.miniMaxQlearning(initialQvalues, varValues[i], alpha, explore, gamma);
+				plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+				plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+				plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+			}
+		case "Temperature":
+			if( algorithm.equals("Sarsa")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.Sarsa( alpha, discountFactor, nEpisodes, greedy,
+							initialQvalues, epsilon, varValues[i], randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
 				}
 			}
-				
-		}
-		else if( playGame ) {
-			ArrayList<Integer> steps = new ArrayList<Integer>();
-			int nrOfRuns = 100;
-			int sum = 0;
+			else if( algorithm.equals("Qlearning")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.qlearning( alpha, discountFactor, nEpisodes, greedy,
+							initialQvalues, epsilon, varValues[i], randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+		case "Epsilon":
+			if( algorithm.equals("Sarsa")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.Sarsa( alpha, discountFactor, nEpisodes, greedy,
+							initialQvalues, varValues[i], temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else if( algorithm.equals("Qlearning")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.qlearning( alpha, discountFactor, nEpisodes, greedy,
+							initialQvalues, varValues[i], temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+		case "Alpha":
+			if( algorithm.equals("Sarsa")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.Sarsa( varValues[i], discountFactor, nEpisodes, greedy,
+							initialQvalues, epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else if( algorithm.equals("Qlearning")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.qlearning( varValues[i], discountFactor, nEpisodes, greedy,
+							initialQvalues, epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else{
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					//plotData = game.miniMaxQlearning( initialQvalues, initialV, 
+					//varValues[i], explore, discountFactor);
+					plot.add_data_series(plotData.get(0), plotData.get(1), labelLine1);
+					plot.add_data_series(plotData.get(0), plotData.get(2), labelLine2);
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+		case "Discount factor":
+			if( algorithm.equals("Sarsa")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.Sarsa(alpha, varValues[i], nEpisodes, greedy,
+							initialQvalues, epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else if( algorithm.equals("Qlearning")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.qlearning( alpha, varValues[i], nEpisodes, greedy,
+							initialQvalues, epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else{
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					//plotData = game.miniMaxQlearning( initialQvalues, initialV, 
+					//alpha, explore, varValues[i]);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+		case "Initial Q values":
+			if( algorithm.equals("Sarsa")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.Sarsa( alpha, discountFactor, nEpisodes, greedy,
+							varValues[i], epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else if( algorithm.equals("Qlearning")){
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					plotData = game.qlearning( alpha, discountFactor, nEpisodes, greedy,
+							varValues[i], epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+			else{
+				for( int i = 0; i < varValues.length; i++ ){
+					Game game = new Game( nPreds );
+					//plotData = game.miniMaxQlearning( varValues[i], initialV, 
+					//alpha, explore, discount);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+				}
+			}
+		case "Standard":
+			if( algorithm.equals("Sarsa")){
+					Game game = new Game( nPreds );
+					plotData = game.Sarsa( alpha, discountFactor, nEpisodes, greedy,
+							initialQvalues, epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+			}
+			else if( algorithm.equals("Qlearning")){
+					Game game = new Game( nPreds );
+					plotData = game.qlearning( alpha, discountFactor, nEpisodes, greedy,
+							initialQvalues, epsilon, temperature, randomInitState);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+			}
+			else{
+					Game game = new Game( nPreds );
+					//plotData = game.miniMaxQlearning( varValues[i], initialV, 
+					//alpha, explore, discount);
+					plot.add_data_series(plotData.get(0), plotData.get(1), "Predator");
+					plot.add_data_series(plotData.get(0), plotData.get(2), "Prey");
+					plot.export_image(fileName, imageWidth, imageHeight, nEpisodes,  yAxisRange, yAxisTicks);
+			}
 			
-			boolean useRandomPolicy = true;
-			
-			for( int i = 0; i < nrOfRuns; i++ ) {
-				Predator pred = new Predator(false);
-				Prey prey = new Prey(false);
-				Game game = new Game( pred, prey );
-				int step = game.start( useRandomPolicy );
-				sum = sum + step;
-				steps.add( step );
-			}	
-			double averageIt = sum / nrOfRuns;
-			System.out.printf( "Average number of steps to complete game: %f steps", 
-					averageIt );
-			if( nrOfRuns > 1 ) {
-				double stddev = std( steps );
-				System.out.println( "STD:" + stddev );
-			}	
-		}	
-	}	
-
-	
-	// Function to compute the standard deviation of an array of integers
-	public static double std( ArrayList<Integer> array ) {
-		double average = 0.0;
-		
-		for( int i = 0; i < array.size(); i++ ) {
-			average += array.get(i);
 		}
-		average = average / array.size();
-		
-		double std;
-		int sum = 0;
-		for( int i = 0; i < array.size(); i++ ) {
-			sum += Math.pow( (array.get(i) - average), 2 );
-		}
-		std = Math.sqrt( sum / (array.size() - 1) );
-		return std;
 	}
-	*/
 }
