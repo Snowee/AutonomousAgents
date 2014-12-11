@@ -17,6 +17,7 @@ public class Predator {
 	public double[] policy = { 0.2, 0.2, 0.2, 0.2, 0.2 }; // Wait,N,E,S,West,
 	public String[] actions = { "WAIT", "NORTH", "EAST", "SOUTH", "WEST" };
 	public double[] probRange = { 0.2, 0.4, 0.6, 0.8, 1 };
+	public Point[] predStartLocSt = { new Point(5,5), new Point(-5,-5), new Point(5,-5), new Point(-5,5) };
 	public Point[] predStartLocs = { new Point(0,0), new Point(10,10), 
 			new Point(0,10), new Point(10,0) };
 	public List<Point> possMoves = new ArrayList<Point>( Arrays.asList( new Point(0,0), new Point(0,-1), new Point(1,0), new Point(0,1), new Point(-1,0)));

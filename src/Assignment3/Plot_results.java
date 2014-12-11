@@ -61,11 +61,15 @@ public class Plot_results {
 			if( i % sampleSize == 0){
 				System.out.printf("Average: %f,  %d\n", average, c);
 				averagedData[c] = average/sampleSize;
-				xData[c] = i - sampleSize;
+				xData[c] = i;
 				average = 0;
 				c++;
 				
 			}
+			/*else if( i == y_data.length ){
+				averagedData[c] = average/sampleSize;
+				xData[c] = i;
+			}*/
 			else{
 				System.out.println(y_data[i]);
 				average = average + y_data[i];
@@ -90,7 +94,7 @@ public class Plot_results {
     	 	NumberAxis yAxis = new NumberAxis();
     	 	NumberAxis xAxis = new NumberAxis();
         	yAxis.setTickUnit(new NumberTickUnit(yAxisTicks));
-        	yAxis.setRange(-1*yAxisRange, yAxisRange);
+        	yAxis.setRange(0, yAxisRange);
         	yAxis.setLabel(y_title);
         	yAxis.setLabelFont(new Font("Dialog", Font.PLAIN, 15));
         	xAxis.setLabel(x_title);
@@ -98,6 +102,7 @@ public class Plot_results {
            
         	plot.setRangeAxis(yAxis);
         	
+        	/*
         	LegendTitle lt = new LegendTitle(plot);
         	//Lettertype grootte legenda
         	lt.setItemFont(new Font("Dialog", Font.PLAIN, 10));
@@ -111,7 +116,7 @@ public class Plot_results {
         	//Grootte van de legenda
         	ta.setMaxWidth(0.3);
         	ta.setMaxHeight(0.1);
-        	plot.addAnnotation(ta);
+        	plot.addAnnotation(ta);*/
         	
     	 	File lineChart=new File(filename);              
 	        ChartUtilities.saveChartAsPNG(lineChart,lineChartObject,width,height); 
